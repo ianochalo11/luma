@@ -34,8 +34,6 @@ mocked USDC-on-Solana checkout. Not a clone of the Luma product.
 - `@solana/wallet-adapter-*` (mocked tx lifecycle only — **installed in Phase 3**)
 - Vitest + RTL · Playwright · ESLint + Prettier · Husky + lint-staged
 
-## Decisions for review (Phase 1)
-
 1. **Light vs dark:** The live Breakpoint page is a **light lavender** surface
    (`#f4f0f9`) with purple CTA `#836aa2`, not a near-black Luma shell. Tokens
    follow the sampled page. Say if you still want a forced dark override.
