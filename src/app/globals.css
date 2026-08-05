@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/* Light flat SaaS tokens — mirrored from src/constants/theme.ts */
+
+:root {
+  --background: #f4f2fa;
+  --background-elevated: #f6f5fb;
+  --surface: #ffffff;
+  --surface-muted: #f0eef6;
+
+  --foreground: #171717;
+  --foreground-secondary: #374151;
+  --muted: #6b7280;
+  --faint: #9ca3af;
+
+  --border: #e5e7eb;
+  --border-subtle: #eeeff2;
+
+  --brand-5: #f5f3ff;
+  --brand-10: #ede9fe;
+  --brand-20: #ddd6fe;
+  --brand-30: #c4b5fd;
+  --brand-40: #a78bfa;
+  --brand-50: #6d5bd0;
+  --brand-60: #5b4bb8;
+  --brand-70: #4c3d9a;
+  --brand-80: #3b2f78;
+  --brand-90: #2a2154;
+  --brand-100: #171717;
+
+  --cover-deep: #100917;
+  --cover-tint: #110a19;
+  --cover-vibrant: #7c5fe0;
+  --pale-brand: #6d5bd01a;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-card: 1rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-brand-5: var(--brand-5);
+  --color-brand-10: var(--brand-10);
+  --color-brand-20: var(--brand-20);
+  --color-brand-30: var(--brand-30);
+  --color-brand-40: var(--brand-40);
+  --color-brand-50: var(--brand-50);
+  --color-brand-60: var(--brand-60);
+  --color-brand-70: var(--brand-70);
+  --color-brand-80: var(--brand-80);
+  --color-brand-90: var(--brand-90);
+  --color-brand-100: var(--brand-100);
+
+  --color-cover-deep: var(--cover-deep);
+  --color-cover-tint: var(--cover-tint);
+  --color-cover-vibrant: var(--cover-vibrant);
+
+  --font-sans: var(--font-sans);
+  --font-title: var(--font-title);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-card: var(--radius-card);
+}
+
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-50);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .font-title {
+    font-family: var(--font-title), var(--font-sans), system-ui, sans-serif;
+    letter-spacing: 0.01em;
+  }
+
+  .micro-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+}
+
+/* Admin-only theme tokens — scoped to .admin-root, never affects public pages */
+.admin-root {
+  --admin-bg: #f4f2fa;
+  --admin-sidebar: #ffffff;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f0eef6;
+  --admin-fg: #171717;
+  --admin-fg-secondary: #374151;
+  --admin-muted: #6b7280;
+  --admin-faint: #9ca3af;
+  --admin-border: #e5e7eb;
+  --admin-brand: #6d5bd0;
+  --admin-brand-hover: #5b4bb8;
+  --admin-brand-soft: #ede9fe;
+  --admin-row-hover: #f5f3ff;
+  color-scheme: light;
+}
+
+.admin-root[data-theme="dark"] {
+  --admin-bg: #12101a;
+  --admin-sidebar: #181522;
+  --admin-surface: #1e1a2b;
+  --admin-surface-muted: #2a2438;
+  --admin-fg: #f4f2fa;
+  --admin-fg-secondary: #c4bfd4;
+  --admin-muted: #8b849c;
+  --admin-faint: #6b657a;
+  --admin-border: #342e45;
+  --admin-brand: #a78bfa;
+  --admin-brand-hover: #c4b5fd;
+  --admin-brand-soft: #2a2154;
+  --admin-row-hover: #241f33;
+  color-scheme: dark;
+}
+
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-admin-fade {
+  animation: admin-fade 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-admin-fade {
+    animation: none;
+  }
+}
