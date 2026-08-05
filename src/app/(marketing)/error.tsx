@@ -1,6 +1,6 @@
 "use client";
 
-export default function BreakpointError({
+export default function HomeError({
   error,
   reset,
 }: {

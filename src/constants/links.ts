@@ -89,7 +89,7 @@ export const LINKS = {
   },
 
   appRoutes: {
-    landing: "/breakpoint2026",
+    landing: "/",
     register: "/event/breakpoint2026/register",
     /** Payment is on the registration page */
     checkout: "/event/breakpoint2026/register",

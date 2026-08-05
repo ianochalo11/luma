@@ -78,7 +78,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
               title="No users yet"
               description="Accounts appear here after someone signs in from the event page."
               action={
-                <Link href="/breakpoint2026" className={adminUi.btnPrimary}>
+                <Link href="/" className={adminUi.btnPrimary}>
                   Open event page
                 </Link>
               }

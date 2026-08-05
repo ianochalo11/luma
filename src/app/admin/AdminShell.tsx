@@ -170,7 +170,7 @@ export function AdminShell({ email, children }: AdminShellProps) {
             </button>
 
             <Link
-              href="/breakpoint2026"
+              href="/"
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--admin-muted)] transition-colors hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-fg)]",
                 collapsed && "lg:justify-center lg:px-0",

@@ -13,7 +13,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
  * left = cover + host meta; right = title, ticket card, about, map.
  * Mobile stacks sidebar-first, then main.
  */
-export default function Breakpoint2026Page() {
+export default function HomePage() {
   const event = BREAKPOINT_EVENT;
 
   return (

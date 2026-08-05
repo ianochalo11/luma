@@ -6,9 +6,9 @@ test.describe("ticket flow happy path", () => {
     await page.getByLabel("Email").fill("josephwamiti8711@gmail.com");
     await page.getByLabel("Password").fill("demo");
     await page.getByRole("button", { name: /Continue with email/i }).click();
-    await page.waitForURL(/breakpoint2026|profile|register/);
+    await page.waitForURL(/\/$|profile|register/);
 
-    await page.goto("/breakpoint2026");
+    await page.goto("/");
     await expect(
       page.getByRole("heading", { name: /Solana Breakpoint 2026/i }),
     ).toBeVisible();

@@ -22,7 +22,7 @@ mocked USDC-on-Solana checkout. Not a clone of the Luma product.
 | Phase | Scope                                                    | Status |
 | ----- | -------------------------------------------------------- | ------ |
 | 1     | Folder scaffold + design tokens + content/link constants | Done   |
-| 2     | Landing page (`/breakpoint2026`)                         | Done   |
+| 2     | Landing page (`/`)                                       | Done   |
 | 3     | Registration + payment flow                              | Done   |
 | 4     | Auth (sign-in, profile, settings) + middleware guards    | Done   |
 | 5     | MongoDB + Follow + Admin dashboard                       | Done   |
@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000/breakpoint2026](http://localhost:3000/breakpoint2026).
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Swapping to production later
 

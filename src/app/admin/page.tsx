@@ -126,7 +126,7 @@ export default async function AdminOverviewPage() {
                 title="No bookings yet"
                 description="When someone completes checkout on the event page, their registration will show up here."
                 action={
-                  <Link href="/breakpoint2026" className={adminUi.btnPrimary}>
+                  <Link href="/" className={adminUi.btnPrimary}>
                     Open event page
                   </Link>
                 }

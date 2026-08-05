@@ -20,7 +20,7 @@ export default auth((req) => {
   }
 
   if (isAdminRoute && isLoggedIn && !isAdmin) {
-    return NextResponse.redirect(new URL("/breakpoint2026", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 
   return NextResponse.next();
