@@ -8,6 +8,8 @@ import { TicketWidget } from "@/components/event/TicketWidget";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
+// Staging: event landing served at `/` (formerly `/breakpoint2026`).
+
 /**
  * Layout mirrors luma.com/breakpoint2026:
  * left = cover + host meta; right = title, ticket card, about, map.
