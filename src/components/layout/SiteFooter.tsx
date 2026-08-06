@@ -2,16 +2,20 @@ import Link from "next/link";
 import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { Mail } from "lucide-react";
 import { FOOTER_NAV_LINKS } from "@/constants/event-content";
+import { pageShellStyle } from "@/constants/layout";
 import { LINKS } from "@/constants/links";
 
 export function SiteFooter() {
   return (
-    <footer className="border-border bg-surface mt-auto border-t">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
+    <footer className="bg-background mt-auto w-full">
+      <div
+        className="border-border mx-auto flex w-full flex-col gap-6 border-t py-8 sm:flex-row sm:items-center sm:justify-between"
+        style={pageShellStyle}
+      >
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <Link
             href={LINKS.site.home}
-            className="text-foreground transition-opacity hover:opacity-70"
+            className="text-nav hover:text-muted transition-colors"
             aria-label="Luma Home"
           >
             <svg
@@ -25,14 +29,14 @@ export function SiteFooter() {
             </svg>
           </Link>
           <nav
-            className="text-muted flex flex-wrap gap-x-4 gap-y-2 text-sm"
+            className="text-nav flex flex-wrap gap-x-4 gap-y-2 text-sm"
             aria-label="Footer"
           >
             {FOOTER_NAV_LINKS.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="hover:text-foreground transition-colors"
+                className="hover:text-muted transition-colors"
                 {...(item.href.startsWith("http")
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
@@ -43,13 +47,13 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="text-muted flex items-center gap-2">
+        <div className="text-nav flex items-center gap-2">
           <a
             href={LINKS.social.lumaInstagram}
             target="_blank"
             rel="nofollow noopener"
             aria-label="Luma on Instagram"
-            className="hover:bg-surface-muted hover:text-foreground rounded-md p-1.5 transition-colors"
+            className="hover:text-muted rounded-md p-1.5 transition-colors"
           >
             <FaInstagram className="h-4 w-4" />
           </a>
@@ -58,14 +62,14 @@ export function SiteFooter() {
             target="_blank"
             rel="nofollow noopener"
             aria-label="Luma on X"
-            className="hover:bg-surface-muted hover:text-foreground rounded-md p-1.5 transition-colors"
+            className="hover:text-muted rounded-md p-1.5 transition-colors"
           >
             <FaXTwitter className="h-4 w-4" />
           </a>
           <a
             href={LINKS.social.lumaSupportEmail}
             aria-label="Contact Us"
-            className="hover:bg-surface-muted hover:text-foreground rounded-md p-1.5 transition-colors"
+            className="hover:text-muted rounded-md p-1.5 transition-colors"
           >
             <Mail className="h-4 w-4" strokeWidth={1.75} />
           </a>
@@ -73,7 +77,7 @@ export function SiteFooter() {
             href={LINKS.site.app}
             target="_blank"
             rel="noopener noreferrer"
-            className="border-border bg-surface text-foreground hover:bg-surface-muted ml-1 inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors"
+            className="border-border/80 text-nav hover:text-muted ml-1 inline-flex h-8 items-center rounded-full border bg-transparent px-3 text-xs font-medium transition-colors"
           >
             Get the App
           </Link>

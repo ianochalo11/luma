@@ -7,13 +7,14 @@ interface AboutEventSectionProps {
 export function AboutEventSection({ event }: AboutEventSectionProps) {
   return (
     <section
-      className="border-border mt-10 border-t pt-8"
+      className="mt-10 border-t pt-4"
+      style={{ borderColor: "var(--opacity-second-light)" }}
       aria-labelledby="about-heading"
     >
-      <h2 id="about-heading" className="font-title text-foreground text-xl font-semibold">
+      <h2 id="about-heading" className="font-title-medium text-foreground text-lg">
         {event.meta.aboutHeading}
       </h2>
-      <div className="text-foreground mt-4 space-y-4 text-base leading-7">
+      <div className="text-foreground text-md mt-4 space-y-4 leading-[1.6]">
         {event.about.paragraphs.map((paragraph) => (
           <p key={paragraph.slice(0, 48)}>{paragraph}</p>
         ))}

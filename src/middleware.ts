@@ -1,5 +1,8 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import { authConfig } from "@/lib/auth/config";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -7,9 +10,7 @@ export default auth((req) => {
   const isAdmin = !!req.auth?.user?.isAdmin;
 
   const isAccountProtected =
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings") ||
-    /\/event\/[^/]+\/(register|checkout)/.test(pathname);
+    pathname.startsWith("/profile") || pathname.startsWith("/settings");
 
   const isAdminRoute = pathname.startsWith("/admin");
 
@@ -27,11 +28,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/settings/:path*",
-    "/event/:path*/register",
-    "/event/:path*/checkout",
-    "/admin/:path*",
-  ],
+  matcher: ["/profile/:path*", "/settings/:path*", "/admin/:path*"],
 };

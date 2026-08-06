@@ -76,7 +76,7 @@ export const BREAKPOINT_EVENT: Event = {
     accessCodePrompt: "Have an access code? You can enter it here.",
   },
   welcome: {
-    signedOut: "Sign in to get your ticket below.",
+    signedOut: "Welcome! To join the event, please get your ticket below.",
     signedInTemplate:
       "Welcome, {firstName}! To join the event, please get your ticket below.",
   },

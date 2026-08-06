@@ -1,37 +1,71 @@
+@import url("https://luma.com/fonts/alternate.css");
 @import "tailwindcss";
 
-/* Light flat SaaS tokens — mirrored from src/constants/theme.ts */
+/* Tokens sampled from luma.com/breakpoint2026 (.tint-root.light) */
 
 :root {
-  --background: #f4f2fa;
-  --background-elevated: #f6f5fb;
+  color-scheme: light;
+
+  /* Page / surfaces — Luma --brand-10 / --nav-bg-color */
+  --background: #f4f0f9;
+  --background-elevated: #fcfbfe;
   --surface: #ffffff;
-  --surface-muted: #f0eef6;
+  --surface-muted: #f4f0f9;
 
-  --foreground: #171717;
-  --foreground-secondary: #374151;
-  --muted: #6b7280;
-  --faint: #9ca3af;
+  /* Text — purple-black, not #000
+     Luma: --black-base-rgb: 29, 3, 51 → --primary-color */
+  --foreground: #1d0333;
+  --foreground-secondary: #503e65;
+  --muted: rgba(29, 3, 51, 0.64);
+  --faint: rgba(29, 3, 51, 0.36);
+  /* Luma --nav-link-color = tertiary-color-alpha */
+  --nav: rgba(29, 3, 51, 0.36);
 
-  --border: #e5e7eb;
-  --border-subtle: #eeeff2;
+  --border: #e1e1e1;
+  --border-subtle: #ebebeb;
 
-  --brand-5: #f5f3ff;
-  --brand-10: #ede9fe;
-  --brand-20: #ddd6fe;
-  --brand-30: #c4b5fd;
-  --brand-40: #a78bfa;
-  --brand-50: #6d5bd0;
-  --brand-60: #5b4bb8;
-  --brand-70: #4c3d9a;
-  --brand-80: #3b2f78;
-  --brand-90: #2a2154;
-  --brand-100: #171717;
+  /* Translucent washes (Luma --opacity-light / --opacity-second-light) */
+  --opacity-light: rgba(29, 3, 51, 0.04);
+  --opacity-second-light: rgba(29, 3, 51, 0.08);
+
+  /* Exact brand ramp from .tint-root.light */
+  --brand-5: #fcfbfe;
+  --brand-10: #f4f0f9;
+  --brand-20: #f2ebfb;
+  --brand-30: #d4c7e6;
+  --brand-40: #9885b0;
+  --brand-50: #836aa2;
+  --brand-60: #6d5788;
+  --brand-70: #503e65;
+  --brand-80: #332840;
+  --brand-90: #18141e;
+  --brand-100: #131016;
 
   --cover-deep: #100917;
   --cover-tint: #110a19;
-  --cover-vibrant: #7c5fe0;
-  --pale-brand: #6d5bd01a;
+  --cover-vibrant: #836aa2;
+  --pale-brand: #836aa221;
+
+  /*
+   * Exact Luma stacks:
+   * --font: -apple-system, BlinkMacSystemFont, "Apple Color Emoji", Inter, …
+   * --title-font: alternate, var(--font)
+   * Inter is injected as --font-inter by next/font.
+   */
+  --luma-font:
+    -apple-system, BlinkMacSystemFont, "Apple Color Emoji", var(--font-inter), Roboto,
+    "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --luma-title-font: "alternate", var(--luma-font);
+
+  --font-size-xxxl: 1.5rem;
+  --font-size-xxl: 1.375rem;
+  --font-size-xl: 1.25rem;
+  --font-size-lg: 1.125rem;
+  --font-size-md: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.8125rem;
+  --font-size-xxs: 0.75rem;
+  --font-size-xxxs: 0.625rem;
 
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
@@ -52,6 +86,7 @@
   --color-foreground-secondary: var(--foreground-secondary);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
+  --color-nav: var(--nav);
 
   --color-border: var(--border);
   --color-border-subtle: var(--border-subtle);
@@ -72,8 +107,18 @@
   --color-cover-tint: var(--cover-tint);
   --color-cover-vibrant: var(--cover-vibrant);
 
-  --font-sans: var(--font-sans);
-  --font-title: var(--font-title);
+  --font-sans: var(--luma-font);
+  --font-title: var(--luma-title-font);
+
+  --text-xxxl: var(--font-size-xxxl);
+  --text-xxl: var(--font-size-xxl);
+  --text-xl: var(--font-size-xl);
+  --text-lg: var(--font-size-lg);
+  --text-md: var(--font-size-md);
+  --text-sm: var(--font-size-sm);
+  --text-xs: var(--font-size-xs);
+  --text-xxs: var(--font-size-xxs);
+  --text-xxxs: var(--font-size-xxxs);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -89,12 +134,17 @@
 
   html {
     scroll-behavior: smooth;
+    color-scheme: light;
+    background: var(--background);
   }
 
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--luma-font);
+    font-size: var(--font-size-md);
+    font-weight: 400;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -107,33 +157,44 @@
 
 @layer utilities {
   .font-title {
-    font-family: var(--font-title), var(--font-sans), system-ui, sans-serif;
-    letter-spacing: 0.01em;
+    font-family: var(--luma-title-font);
+    /* Weight 600 = Luma --font-weight-bold; tracking comes from Typekit face */
+    font-weight: 600;
+  }
+
+  .font-title-medium {
+    font-family: var(--luma-title-font);
+    font-weight: 500;
   }
 
   .micro-label {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-xxxs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
   }
+
+  /* Luma .text-tinted */
+  .text-tinted {
+    color: #503e65cc;
+  }
 }
 
 /* Admin-only theme tokens — scoped to .admin-root, never affects public pages */
 .admin-root {
-  --admin-bg: #f4f2fa;
+  --admin-bg: #f4f0f9;
   --admin-sidebar: #ffffff;
   --admin-surface: #ffffff;
-  --admin-surface-muted: #f0eef6;
-  --admin-fg: #171717;
-  --admin-fg-secondary: #374151;
-  --admin-muted: #6b7280;
-  --admin-faint: #9ca3af;
-  --admin-border: #e5e7eb;
-  --admin-brand: #6d5bd0;
-  --admin-brand-hover: #5b4bb8;
-  --admin-brand-soft: #ede9fe;
+  --admin-surface-muted: #f4f0f9;
+  --admin-fg: #1d0333;
+  --admin-fg-secondary: #503e65;
+  --admin-muted: rgba(29, 3, 51, 0.64);
+  --admin-faint: rgba(29, 3, 51, 0.36);
+  --admin-border: #e1e1e1;
+  --admin-brand: #836aa2;
+  --admin-brand-hover: #6d5788;
+  --admin-brand-soft: #f4f0f9;
   --admin-row-hover: #f5f3ff;
   color-scheme: light;
 }

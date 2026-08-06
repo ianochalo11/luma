@@ -12,7 +12,8 @@ export function EventTags({ tags }: EventTagsProps) {
         <li key={tag.label}>
           <Link
             href={tag.href}
-            className="border-border-subtle bg-surface text-foreground-secondary hover:border-brand-30 hover:bg-brand-10 hover:text-brand-70 inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors"
+            className="hover:border-brand-40 hover:text-brand-50 text-nav inline-flex items-center rounded-full border px-2 py-0.5 text-sm font-medium transition-colors"
+            style={{ borderColor: "var(--opacity-second-light)" }}
           >
             {tag.label}
           </Link>

@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { SignInModal } from "@/components/auth/SignInModal";
 
 type PendingAction = (() => void | Promise<void>) | null;
@@ -24,6 +26,8 @@ const SignInModalContext = createContext<SignInModalContextValue | null>(null);
 export function SignInModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pendingRef = useRef<PendingAction>(null);
+  const { update } = useSession();
+  const router = useRouter();
 
   const openSignIn = useCallback((opts?: { onSuccess?: () => void | Promise<void> }) => {
     pendingRef.current = opts?.onSuccess ?? null;
@@ -39,8 +43,10 @@ export function SignInModalProvider({ children }: { children: ReactNode }) {
     const action = pendingRef.current;
     pendingRef.current = null;
     setOpen(false);
+    await update();
+    router.refresh();
     if (action) await action();
-  }, []);
+  }, [update, router]);
 
   const value = useMemo(
     () => ({ open, openSignIn, closeSignIn }),

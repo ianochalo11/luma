@@ -40,6 +40,22 @@ export async function findUserById(id: string): Promise<AppUserRecord | null> {
   return doc ? toUserRecord(doc) : null;
 }
 
+export async function updateUserName(
+  id: string,
+  name: string,
+): Promise<AppUserRecord | null> {
+  await connectDb();
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  const doc = await UserModel.findByIdAndUpdate(
+    id,
+    { $set: { name: trimmed } },
+    { new: true },
+  );
+  return doc ? toUserRecord(doc) : null;
+}
+
 export async function upsertUserOnSignIn(input: {
   email: string;
   name?: string | null;

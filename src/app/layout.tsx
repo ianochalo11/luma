@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { BREAKPOINT_EVENT } from "@/constants/event-content";
 import { LINKS } from "@/constants/links";
 import { AuthSessionProvider } from "@/components/layout/AuthSessionProvider";
-import { fontSans, fontTitle } from "@/styles/fonts";
+import { fontSans } from "@/styles/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,9 +17,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F4F2FA",
+  themeColor: "#F4F0F9",
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -30,7 +31,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontSans.variable} ${fontTitle.variable} h-full antialiased`}
+      className={`${fontSans.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
       <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
         <AuthSessionProvider>{children}</AuthSessionProvider>

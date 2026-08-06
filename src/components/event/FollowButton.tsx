@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { useSignInModal } from "@/components/auth/SignInModalProvider";
+import { cn } from "@/lib/utils/cn";
 
 interface FollowButtonProps {
   eventId: string;
@@ -95,8 +96,8 @@ export function FollowButton({
   return (
     <Button
       size="sm"
-      variant={showFollowing ? "secondary" : "primary"}
-      className={className}
+      variant={showFollowing ? "secondary" : "light"}
+      className={cn("min-w-[4.5rem]", className)}
       onClick={handleClick}
       disabled={pending}
       aria-pressed={showFollowing}

@@ -1,13 +1,16 @@
 import { type ComponentProps } from "react";
 import { cn } from "@/lib/utils/cn";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "light";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-brand-50 text-white hover:bg-brand-60 active:scale-[0.98] shadow-sm",
   secondary:
     "border border-border bg-surface text-foreground hover:bg-brand-10 active:scale-[0.98]",
+  /** Luma `light solid` — Follow pill on event sidebar */
+  light:
+    "bg-[var(--opacity-light)] text-muted hover:bg-[var(--opacity-second-light)] hover:text-foreground active:scale-[0.98]",
   ghost: "text-foreground-secondary hover:bg-brand-10 active:scale-[0.98]",
 };
 

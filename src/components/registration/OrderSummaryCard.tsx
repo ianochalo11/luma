@@ -53,7 +53,7 @@ export function OrderSummaryCard() {
                 id="coupon-code"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                className="border-border focus-visible:border-brand-50 h-10 min-w-0 flex-1 rounded-xl border bg-[#f4f3f6] px-3 text-sm outline-none"
+                className="border-border bg-surface-muted text-foreground focus-visible:border-brand-50 h-10 min-w-0 flex-1 rounded-xl border px-3 text-sm outline-none"
                 placeholder="e.g. SOLANA10"
                 autoComplete="off"
               />

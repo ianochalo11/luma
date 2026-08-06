@@ -4,12 +4,12 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 
 export default function ProfilePage() {
   return (
-    <>
+    <div className="bg-background flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12">
+      <main className="mx-auto w-full flex-1 px-4 pt-10 pb-16 sm:px-6 sm:pt-14">
         <ProfileForm />
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

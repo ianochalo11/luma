@@ -1,24 +1,18 @@
 /**
- * Font loading strategy
+ * Font loading — mirrored from https://luma.com/breakpoint2026
  *
- * Luma titles on this page use Adobe Typekit family "alternate"
- * (`--title-font: alternate, var(--font)` from /fonts/alternate.css).
- * We cannot redistribute Typekit files, so titles use Outfit (similar
- * geometric sans, medium weight + slight tracking) via next/font.
+ * Body `--font`:
+ *   -apple-system, BlinkMacSystemFont, "Apple Color Emoji", Inter, Roboto, …
+ * Title `--title-font`:
+ *   alternate (Typekit) + body stack; @font-face uses size-adjust:115%
  *
- * Luma body `--font` is an Inter-like system stack; we load Inter for UI.
+ * Inter is loaded via next/font into `--font-inter` and slotted into the
+ * exact Luma stack (system UI first), not used as the sole family.
  */
-import { Inter, Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 
 export const fontSans = Inter({
   subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-export const fontTitle = Outfit({
-  subsets: ["latin"],
-  variable: "--font-title",
-  weight: ["500", "600", "700"],
+  variable: "--font-inter",
   display: "swap",
 });
