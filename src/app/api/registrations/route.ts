@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { createRegistration, ensureBreakpointEvent } from "@/lib/db";
+import { upsertUserOnSignIn } from "@/lib/db/repositories/users";
 import { registrationSchema } from "@/lib/validation/registrationSchema";
 
-/** Persist a paid / confirmed registration after checkout. */
+/** Persist a paid / confirmed registration after checkout (auth optional). */
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
     const body = await request.json();
     const form = registrationSchema.parse(body.form);
     const event = await ensureBreakpointEvent();
+
+    const session = await auth();
+    let userId = session?.user?.id;
+
+    // Guest checkout: upsert an account from the form email/name.
+    if (!userId) {
+      const guest = await upsertUserOnSignIn({
+        email: form.email,
+        name: form.name,
+        authProvider: "email",
+      });
+      userId = guest.id;
+    }
 
     const ticketPriceUsd = Number(body.ticketPriceUsd ?? event.priceUsd);
     const discountUsd = Number(body.discountUsd ?? 0);
@@ -22,7 +31,7 @@ export async function POST(request: Request) {
     );
 
     const registration = await createRegistration({
-      userId: session.user.id,
+      userId,
       eventId: event.id,
       eventSlug: event.slug,
       form,

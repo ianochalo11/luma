@@ -2,10 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { DEMO_USER } from "@/constants/event-content";
+import { authConfig } from "@/lib/auth/config";
 
 let seeded = false;
 
-/** Lazy-load DB only in Node (authorize/signIn) — keep middleware Edge-safe. */
+/** Lazy-load DB only in Node (authorize/signIn). */
 async function ensureSeed() {
   if (seeded) return;
   try {
@@ -29,24 +30,31 @@ async function upsertUser(input: {
 
 /**
  * Auth.js v5
- * - Email (magic-link stub): "Continue with Email" upserts user + signs in.
+ * - Email OTP: Continue with Email → Resend code → verify via `email-otp`.
  * - Credentials demo: joseph / demo for local admin UX.
  * - Google: enabled when AUTH_GOOGLE_ID/SECRET are set.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
-      id: "email",
-      name: "Email",
+      id: "email-otp",
+      name: "Email OTP",
       credentials: {
         email: { label: "Email", type: "email" },
+        code: { label: "Code", type: "text" },
       },
       async authorize(credentials) {
         await ensureSeed();
         const email = String(credentials?.email ?? "")
           .trim()
           .toLowerCase();
-        if (!email || !email.includes("@")) return null;
+        const code = String(credentials?.code ?? "").trim();
+        if (!email || !email.includes("@") || !/^\d{6}$/.test(code)) return null;
+
+        const { verifyOtp } = await import("@/lib/auth/otp");
+        const result = await verifyOtp(email, code);
+        if (!result.ok) return null;
 
         const user = await upsertUser({
           email,
@@ -61,6 +69,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image,
           isAdmin: user.isAdmin,
         };
+      },
+    }),
+    Credentials({
+      id: "email",
+      name: "Email (legacy)",
+      credentials: {
+        email: { label: "Email", type: "email" },
+      },
+      async authorize() {
+        return null;
       },
     }),
     Credentials({
@@ -123,13 +141,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
   ],
-  pages: {
-    signIn: "/sign-in",
-  },
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
         await ensureSeed();
@@ -144,35 +157,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.isAdmin = Boolean(user.isAdmin);
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = String(token.id ?? "");
-        session.user.isAdmin = Boolean(token.isAdmin);
-      }
-      return session;
-    },
-    async authorized({ auth: session, request }) {
-      const { pathname } = request.nextUrl;
-      const isProtected =
-        pathname.startsWith("/profile") ||
-        pathname.startsWith("/settings") ||
-        pathname.startsWith("/admin") ||
-        /\/event\/[^/]+\/(register|checkout)/.test(pathname);
-
-      if (isProtected && !session?.user) return false;
-      if (pathname.startsWith("/admin") && !session?.user?.isAdmin) {
-        return false;
-      }
-      return true;
-    },
   },
-  trustHost: true,
-  secret: process.env.AUTH_SECRET ?? "breakpoint-dev-secret-change-me",
 });

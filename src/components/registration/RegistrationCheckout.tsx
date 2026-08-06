@@ -14,10 +14,10 @@ export function RegistrationCheckout() {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-full flex-1 bg-[#f6f5f8]">
+    <div className="bg-background relative min-h-full flex-1">
       <Link
         href={LINKS.appRoutes.landing}
-        className="text-foreground absolute top-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/10 transition-colors hover:bg-black/15 sm:top-6 sm:right-8"
+        className="text-foreground bg-surface-muted hover:bg-border absolute top-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full transition-colors sm:top-6 sm:right-8"
         aria-label="Close and return to event"
       >
         <X className="h-4 w-4" strokeWidth={2} />

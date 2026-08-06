@@ -12,18 +12,18 @@ export function EventActions({
   onReport?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-0.5">
       <button
         type="button"
         onClick={onContact}
-        className="text-muted hover:text-foreground text-sm transition-colors"
+        className="text-muted hover:text-foreground -ml-1 rounded-md px-1 py-0.5 text-sm transition-colors"
       >
         {contactLabel}
       </button>
       <button
         type="button"
         onClick={onReport}
-        className="text-muted hover:text-foreground text-sm transition-colors"
+        className="text-muted hover:text-foreground -ml-1 rounded-md px-1 py-0.5 text-sm transition-colors"
       >
         {reportLabel}
       </button>

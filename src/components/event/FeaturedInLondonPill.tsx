@@ -3,11 +3,13 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { LINKS } from "@/constants/links";
 
+/** Luma featured-pill — translucent wash, no solid white fill */
 export function FeaturedInLondonPill() {
   return (
     <Link
       href={LINKS.tags.featuredInLondon}
-      className="border-border bg-surface text-foreground hover:bg-surface-muted mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors"
+      className="mb-2 inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-sm font-medium backdrop-blur-md transition-colors"
+      style={{ backgroundColor: "var(--opacity-light)" }}
     >
       <Image
         src={LINKS.assets.londonIcon}
@@ -16,8 +18,12 @@ export function FeaturedInLondonPill() {
         height={18}
         className="rounded-full"
       />
-      <span>Featured in London</span>
-      <ChevronRight className="text-muted h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+      <span className="text-foreground max-w-[150px] truncate">Featured in London</span>
+      <ChevronRight
+        className="text-faint h-3.5 w-3.5 shrink-0"
+        strokeWidth={2}
+        aria-hidden
+      />
     </Link>
   );
 }

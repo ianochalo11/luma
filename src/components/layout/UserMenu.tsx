@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useId, useRef, useState } from "react";
+import { UserAvatar } from "@/components/account/UserAvatar";
 import { LINKS } from "@/constants/links";
 import { cn } from "@/lib/utils/cn";
 
@@ -20,13 +20,6 @@ export function UserMenu({ user }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-
-  const initials = user.name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 
   useEffect(() => {
     if (!open) return;
@@ -51,9 +44,8 @@ export function UserMenu({ user }: UserMenuProps) {
       <button
         type="button"
         className={cn(
-          "inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full",
-          "bg-brand-50 text-xs font-semibold text-white transition-opacity hover:opacity-90",
-          open && "ring-brand-30 ring-offset-surface ring-2 ring-offset-2",
+          "inline-flex rounded-full transition-opacity hover:opacity-90",
+          open && "ring-brand-30 ring-offset-background ring-2 ring-offset-2",
         )}
         aria-label="Account menu"
         aria-haspopup="menu"
@@ -61,17 +53,7 @@ export function UserMenu({ user }: UserMenuProps) {
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
       >
-        {user.image ? (
-          <Image
-            src={user.image}
-            alt=""
-            width={36}
-            height={36}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          initials
-        )}
+        <UserAvatar name={user.name} image={user.image} size="xs" />
       </button>
 
       {open && (
@@ -82,19 +64,7 @@ export function UserMenu({ user }: UserMenuProps) {
           className="border-border bg-surface absolute right-0 z-50 mt-2 w-[280px] overflow-hidden rounded-2xl border shadow-lg shadow-black/8"
         >
           <div className="flex items-center gap-3 px-4 py-4">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-300 via-lime-200 to-rose-300">
-              {user.image ? (
-                <Image
-                  src={user.image}
-                  alt=""
-                  width={44}
-                  height={44}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <SmileyFace />
-              )}
-            </div>
+            <UserAvatar name={user.name} image={user.image} size="md" />
             <div className="min-w-0">
               <p className="text-foreground truncate text-sm font-semibold">
                 {user.name}
@@ -146,20 +116,5 @@ function MenuLink({
     >
       {children}
     </Link>
-  );
-}
-
-function SmileyFace() {
-  return (
-    <svg viewBox="0 0 40 40" className="text-foreground h-7 w-7" fill="none" aria-hidden>
-      <circle cx="14" cy="16" r="2" fill="currentColor" />
-      <circle cx="26" cy="16" r="2" fill="currentColor" />
-      <path
-        d="M13 24c2.2 2.8 5 4.2 7 4.2S24.8 26.8 27 24"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

@@ -2,70 +2,86 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Calendar, CalendarCheck, Compass, type LucideIcon } from "lucide-react";
+import { pageShellStyle } from "@/constants/layout";
 import { LINKS } from "@/constants/links";
 import { useAppSession } from "@/hooks/useSession";
 import { useSignInModal } from "@/components/auth/SignInModalProvider";
+import { LumaMark, LumaWordmark } from "@/components/layout/LumaLogo";
+import { NotificationsMenu } from "@/components/layout/NotificationsMenu";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { cn } from "@/lib/utils/cn";
 
-/**
- * Attendee navbar for the Breakpoint event page.
- * Signed-in: clock + notifications + avatar (no organizer "Create Event").
- */
+/** Shares the page shell gutters so the wordmark lines up with the cover. */
 export function SiteHeader() {
-  const { user, isAuthenticated, status } = useAppSession();
+  const { user, status } = useAppSession();
   const { openSignIn } = useSignInModal();
+  const signedIn = status === "authenticated" && !!user;
 
   return (
-    <header className="border-border bg-surface sticky top-0 z-40 border-b">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
-        {/* Left: logo (fixed) + optional signed-in nav */}
-        <div className="flex min-w-0 items-center gap-5">
+    <header className="border-border-subtle bg-background sticky top-0 z-40 w-full border-b">
+      <div
+        className="mx-auto flex h-12 w-full items-center justify-between gap-4"
+        style={pageShellStyle}
+      >
+        <div className="flex min-w-0 items-center gap-6">
           <Link
             href={LINKS.appRoutes.landing}
-            className="text-foreground flex shrink-0 items-center transition-opacity hover:opacity-80"
+            className="text-nav hover:text-foreground -ml-0.5 flex shrink-0 items-center transition-colors"
             aria-label="Luma Home"
           >
-            <LumaMark className="h-7 w-7" />
+            {signedIn ? (
+              <LumaMark className="h-[18px] w-[18px]" />
+            ) : (
+              <LumaWordmark className="text-foreground h-4" />
+            )}
           </Link>
 
-          {isAuthenticated && (
-            <nav className="hidden items-center gap-0.5 md:flex" aria-label="Primary">
-              <HeaderLink href={LINKS.appRoutes.landing}>Event</HeaderLink>
-              <HeaderLink href={LINKS.site.discover}>Discover</HeaderLink>
+          {signedIn && (
+            <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+              <NavItem href={LINKS.nav.events} icon={CalendarCheck}>
+                Events
+              </NavItem>
+              <NavItem href={LINKS.nav.calendars} icon={Calendar}>
+                Calendars
+              </NavItem>
+              <NavItem href={LINKS.site.discover} icon={Compass}>
+                Discover
+              </NavItem>
             </nav>
           )}
         </div>
 
-        {/* Right: auth-dependent actions — shared control height (h-9) */}
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-4">
           {status === "loading" ? (
-            <span className="bg-surface-muted h-9 w-28 animate-pulse rounded-full" />
-          ) : isAuthenticated && user ? (
+            <span className="h-8 w-28 animate-pulse rounded-full bg-[var(--opacity-light)]" />
+          ) : signedIn && user ? (
             <>
               <LiveClock />
-              <button
-                type="button"
-                className={cn(
-                  controlBase,
-                  "text-muted hover:bg-surface-muted hover:text-foreground w-9 px-0",
-                )}
-                aria-label="Notifications"
+              <Link
+                href={LINKS.nav.createEvent}
+                className="text-nav hover:text-muted text-sm font-medium transition-colors"
               >
-                <Bell className="h-4 w-4" strokeWidth={1.75} />
-              </button>
+                Create Event
+              </Link>
+              <NotificationsMenu />
               <UserMenu user={user} />
             </>
           ) : (
             <>
-              <HeaderLink href={LINKS.site.discover}>Discover Events</HeaderLink>
+              <LiveClock />
+              <Link
+                href={LINKS.site.discover}
+                className="text-nav hover:text-muted hidden text-sm font-medium transition-colors sm:inline"
+              >
+                Discover Events
+              </Link>
               <button
                 type="button"
                 onClick={() => openSignIn()}
                 className={cn(
-                  controlBase,
-                  "border-border text-foreground hover:bg-surface-muted border px-3.5",
+                  "inline-flex h-8 items-center justify-center rounded-full px-3.5 text-sm font-medium transition-colors",
+                  "text-muted bg-[var(--opacity-light)] hover:bg-[#2a2a2a] hover:text-white",
                 )}
               >
                 Sign In
@@ -78,18 +94,28 @@ export function SiteHeader() {
   );
 }
 
-const controlBase =
-  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-sm font-medium transition-colors";
-
-function HeaderLink({ href, children }: { href: string; children: React.ReactNode }) {
+/**
+ * Idle: Luma tertiary / nav grey. Hover & focus: near-black foreground.
+ * Icon ↔ label 6px; items spaced via parent `gap-6` (~24px).
+ */
+function NavItem({
+  href,
+  icon: Icon,
+  children,
+}: {
+  href: string;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       href={href}
       className={cn(
-        controlBase,
-        "text-muted hover:bg-surface-muted hover:text-foreground px-3",
+        "text-nav hover:text-foreground focus-visible:text-foreground",
+        "inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
       )}
     >
+      <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.75} aria-hidden />
       {children}
     </Link>
   );
@@ -110,7 +136,7 @@ function LiveClock() {
 
   if (!now) {
     return (
-      <span className="bg-surface-muted hidden h-4 w-28 animate-pulse rounded lg:block" />
+      <span className="hidden h-4 w-24 animate-pulse rounded bg-[var(--opacity-light)] lg:block" />
     );
   }
 
@@ -130,22 +156,8 @@ function LiveClock() {
       : `GMT${sign}${hours}:${String(mins).padStart(2, "0")}`;
 
   return (
-    <span className="text-muted hidden px-1 text-xs font-medium whitespace-nowrap lg:inline">
+    <span className="text-nav hidden text-xs font-medium whitespace-nowrap lg:inline">
       {time} {tz}
     </span>
-  );
-}
-
-function LumaMark({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 133 134"
-      fill="currentColor"
-      className={className}
-      aria-hidden
-    >
-      <path d="M133 67C96.282 67 66.5 36.994 66.5 0c0 36.994-29.782 67-66.5 67 36.718 0 66.5 30.006 66.5 67 0-36.994 29.782-67 66.5-67" />
-    </svg>
   );
 }

@@ -3,10 +3,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronDown, Wallet } from "lucide-react";
+import { Check, ChevronDown, Pencil, Wallet } from "lucide-react";
 import {
   BREAKPOINT_EVENT,
-  DEMO_USER,
   PAYMENT_COPY,
   REGISTRATION_COPY,
 } from "@/constants/event-content";
@@ -19,6 +18,8 @@ import {
   registrationSchema,
   type RegistrationSchema,
 } from "@/lib/validation/registrationSchema";
+import { UserAvatar } from "@/components/account/UserAvatar";
+import { UpdateNameModal } from "@/components/registration/UpdateNameModal";
 import { TransactionStatus } from "@/components/payment/TransactionStatus";
 import { cn } from "@/lib/utils/cn";
 
@@ -30,7 +31,8 @@ interface RegistrationFormProps {
 }
 
 export function RegistrationForm({ onPaid }: RegistrationFormProps) {
-  const { user } = useAppSession({ fallbackToDemo: true });
+  const { user, status } = useAppSession();
+  const signedIn = status === "authenticated" && !!user;
   const saved = useTicketFlow((s) => s.registration);
   const setRegistration = useTicketFlow((s) => s.setRegistration);
   const discountUsd = useTicketFlow((s) => s.discountUsd);
@@ -43,6 +45,7 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
 
   const { address, connect, shortAddress, disconnect } = useWallet();
   const [signature, setSignature] = useState<string | null>(null);
+  const [nameModalOpen, setNameModalOpen] = useState(false);
 
   const total = useMemo(
     () => Math.max(BREAKPOINT_EVENT.ticket.priceUsd - discountUsd, 0),
@@ -54,12 +57,13 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationSchema>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      name: user?.name ?? DEMO_USER.name,
-      email: user?.email ?? DEMO_USER.email,
+      name: "",
+      email: "",
       legalName: "",
       company: "",
       jobTitle: "",
@@ -77,14 +81,20 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
   });
 
   useEffect(() => {
-    if (saved) {
-      reset({
-        name: user?.name ?? DEMO_USER.name,
-        email: user?.email ?? DEMO_USER.email,
-        ...saved,
-      });
+    if (signedIn && user) {
+      setValue("name", user.name, { shouldValidate: true });
+      setValue("email", user.email, { shouldValidate: true });
     }
-  }, [saved, reset, user?.name, user?.email]);
+  }, [signedIn, user, setValue]);
+
+  useEffect(() => {
+    if (!saved) return;
+    reset({
+      ...saved,
+      name: signedIn && user ? user.name : saved.name,
+      email: signedIn && user ? user.email : saved.email,
+    });
+  }, [saved, reset, signedIn, user]);
 
   async function pay(data: RegistrationSchema) {
     setRegistration(data);
@@ -169,31 +179,73 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
           {REGISTRATION_COPY.yourInfoHeading}
         </h3>
 
-        <Field id="name" label={fields.name.label} required error={errors.name?.message}>
-          <input
-            id="name"
-            {...register("name")}
-            className={inputClass(!!errors.name)}
-            placeholder={fields.name.placeholder}
-            autoComplete="name"
-          />
-        </Field>
+        {signedIn && user ? (
+          <>
+            <input type="hidden" {...register("name")} />
+            <input type="hidden" {...register("email")} />
+            <div className="flex items-center gap-3">
+              <UserAvatar name={user.name} image={user.image} size="sm" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-foreground truncate text-sm font-semibold">
+                    {user.firstName}
+                  </p>
+                  <button
+                    type="button"
+                    aria-label="Edit name"
+                    onClick={() => setNameModalOpen(true)}
+                    className="text-muted hover:text-foreground inline-flex shrink-0 bg-transparent p-0 transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                  </button>
+                </div>
+                <p className="text-muted truncate text-sm">{user.email}</p>
+              </div>
+            </div>
 
-        <Field
-          id="email"
-          label={fields.email.label}
-          required
-          error={errors.email?.message}
-        >
-          <input
-            id="email"
-            type="email"
-            {...register("email")}
-            className={inputClass(!!errors.email)}
-            placeholder={fields.email.placeholder}
-            autoComplete="email"
-          />
-        </Field>
+            <UpdateNameModal
+              open={nameModalOpen}
+              initialName={user.name}
+              onClose={() => setNameModalOpen(false)}
+              onUpdated={(next) => {
+                setValue("name", next, { shouldValidate: true });
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <Field
+              id="name"
+              label={fields.name.label}
+              required
+              error={errors.name?.message}
+            >
+              <input
+                id="name"
+                {...register("name")}
+                className={inputClass(!!errors.name)}
+                placeholder={fields.name.placeholder}
+                autoComplete="name"
+              />
+            </Field>
+
+            <Field
+              id="email"
+              label={fields.email.label}
+              required
+              error={errors.email?.message}
+            >
+              <input
+                id="email"
+                type="email"
+                {...register("email")}
+                className={inputClass(!!errors.email)}
+                placeholder={fields.email.placeholder}
+                autoComplete="email"
+              />
+            </Field>
+          </>
+        )}
 
         <Field
           id="legalName"
@@ -379,7 +431,7 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
         </h3>
 
         <div
-          className="text-foreground flex h-11 items-center gap-2.5 rounded-xl bg-[#f4f3f6] px-3.5 text-sm font-medium"
+          className="bg-surface-muted text-foreground flex h-11 items-center gap-2.5 rounded-xl px-3.5 text-sm font-medium"
           aria-label={`${PAYMENT_COPY.methodLabel}: ${PAYMENT_COPY.methodValue}`}
         >
           <UsdcIcon />
@@ -441,9 +493,12 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-[13px] font-medium text-[#4b5563]">
+      <label
+        htmlFor={id}
+        className="text-foreground-secondary block text-[13px] font-medium"
+      >
         {label}
-        {helper ? <span className="font-normal text-[#6b7280]"> - {helper}</span> : null}
+        {helper ? <span className="text-muted font-normal"> - {helper}</span> : null}
         {required ? <RequiredMark /> : null}
       </label>
       <div className="mt-1.5">{children}</div>
@@ -494,7 +549,7 @@ function Agreement({
 
 function inputClass(invalid: boolean): string {
   return cn(
-    "h-11 w-full rounded-xl border border-[#e5e5ea] bg-[#f4f3f6] px-3.5 text-sm text-foreground outline-none transition-colors",
+    "border-border bg-surface-muted text-foreground h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition-colors",
     "placeholder:text-faint focus-visible:border-brand-40 focus-visible:bg-white",
     invalid && "border-red-400 focus-visible:border-red-400",
   );
@@ -584,7 +639,7 @@ function CategorySelect({
                     "flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm transition-colors",
                     selected
                       ? "bg-brand-5 text-brand-80"
-                      : "text-foreground hover:bg-[#f4f3f6]",
+                      : "text-foreground hover:bg-surface-muted",
                   )}
                   onClick={() => {
                     onChange(selected ? value.filter((v) => v !== opt) : [...value, opt]);
