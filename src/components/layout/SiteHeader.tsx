@@ -33,7 +33,7 @@ export function SiteHeader() {
             {signedIn ? (
               <LumaMark className="h-[18px] w-[18px]" />
             ) : (
-              <LumaWordmark className="text-foreground h-4" />
+              <LumaWordmark className="h-4" />
             )}
           </Link>
 
