@@ -27,7 +27,7 @@ export function SiteHeader() {
         <div className="flex min-w-0 items-center gap-6">
           <Link
             href={LINKS.appRoutes.landing}
-            className="text-nav hover:text-foreground -ml-0.5 flex shrink-0 items-center transition-colors"
+            className="text-nav -ml-0.5 flex shrink-0 items-center"
             aria-label="Luma Home"
           >
             {signedIn ? (
@@ -58,10 +58,7 @@ export function SiteHeader() {
           ) : signedIn && user ? (
             <>
               <LiveClock />
-              <Link
-                href={LINKS.nav.createEvent}
-                className="text-nav hover:text-muted text-sm font-medium transition-colors"
-              >
+              <Link href={LINKS.nav.createEvent} className="text-nav text-sm font-medium">
                 Create Event
               </Link>
               <NotificationsMenu />
@@ -72,7 +69,7 @@ export function SiteHeader() {
               <LiveClock />
               <Link
                 href={LINKS.site.discover}
-                className="text-nav hover:text-muted hidden text-sm font-medium transition-colors sm:inline"
+                className="text-nav hidden text-sm font-medium sm:inline"
               >
                 Discover Events
               </Link>
@@ -94,10 +91,7 @@ export function SiteHeader() {
   );
 }
 
-/**
- * Idle: Luma tertiary / nav grey. Hover & focus: near-black foreground.
- * Icon ↔ label 6px; items spaced via parent `gap-6` (~24px).
- */
+/** Idle: Luma tertiary / nav grey. Icon ↔ label 6px; items spaced via parent `gap-6`. */
 function NavItem({
   href,
   icon: Icon,
@@ -110,10 +104,7 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={cn(
-        "text-nav hover:text-foreground focus-visible:text-foreground",
-        "inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
-      )}
+      className="text-nav inline-flex items-center gap-1.5 text-sm font-medium"
     >
       <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.75} aria-hidden />
       {children}

@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
-import type { TxStatus } from "@/hooks/useTicketFlow";
+import type { TxStatus } from "@/types/payment";
 import { cn } from "@/lib/utils/cn";
 
 interface TransactionStatusProps {

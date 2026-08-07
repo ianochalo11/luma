@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import { Pencil, User } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { fieldControlClass } from "@/components/registration/fieldStyles";
 
 interface UpdateNameModalProps {
   open: boolean;
@@ -19,16 +21,30 @@ export function UpdateNameModal({
   onClose,
   onUpdated,
 }: UpdateNameModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
+  // Only opens from a client click, so document.body is always available here.
   if (!open) return null;
 
-  // Remount on open so field state initializes from props (no setState-in-effect).
-  return (
+  return createPortal(
     <UpdateNameModalContent
-      key={initialName}
       initialName={initialName}
       onClose={onClose}
       onUpdated={onUpdated}
-    />
+    />,
+    document.body,
   );
 }
 
@@ -50,23 +66,12 @@ function UpdateNameModalContent({
       inputRef.current?.focus();
       inputRef.current?.select();
     }, 0);
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !saving) onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      window.clearTimeout(t);
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose, saving]);
+    return () => window.clearTimeout(t);
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    e.stopPropagation();
     const trimmed = name.trim();
     if (!trimmed) {
       setError("Name is required");
@@ -103,7 +108,7 @@ function UpdateNameModalContent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <button
         type="button"
         aria-label="Close"
@@ -119,25 +124,26 @@ function UpdateNameModalContent({
         aria-labelledby={titleId}
         aria-describedby={descId}
         className="relative w-full max-w-[360px] rounded-2xl bg-white px-6 pt-7 pb-6 shadow-2xl shadow-black/20"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col items-center text-center">
           <div
-            className="bg-surface-muted text-foreground-secondary relative flex h-14 w-14 items-center justify-center rounded-full"
+            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#F3F4F6] text-[#6B7280]"
             aria-hidden
           >
             <User className="h-7 w-7" strokeWidth={1.5} />
-            <span className="border-border absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center rounded-full border bg-white shadow-sm">
-              <Pencil className="text-muted h-2.5 w-2.5" strokeWidth={2} />
+            <span className="absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center rounded-full border border-[#E5E7EB] bg-white shadow-sm">
+              <Pencil className="h-2.5 w-2.5 text-[#6B7280]" strokeWidth={2} />
             </span>
           </div>
 
           <h2
             id={titleId}
-            className="text-foreground mt-4 text-lg font-semibold tracking-tight"
+            className="mt-4 text-lg font-semibold tracking-tight text-[#171717]"
           >
             Update Name
           </h2>
-          <p id={descId} className="text-muted mt-1.5 text-sm leading-snug">
+          <p id={descId} className="mt-1.5 text-sm leading-snug text-[#6B7280]">
             Your updated name will be saved to your Luma profile.
           </p>
         </div>
@@ -158,9 +164,8 @@ function UpdateNameModalContent({
               autoComplete="name"
               disabled={saving}
               className={cn(
-                "text-foreground h-11 w-full rounded-xl border bg-white px-3.5 text-sm outline-none",
-                "border-foreground/80 focus-visible:border-foreground",
-                error && "border-red-400 focus-visible:border-red-400",
+                fieldControlClass(!!error),
+                "bg-white focus-visible:bg-white",
               )}
             />
             {error ? (
@@ -173,7 +178,7 @@ function UpdateNameModalContent({
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="bg-foreground hover:bg-brand-90 inline-flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#171717] text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "Updating…" : "Update"}
           </button>

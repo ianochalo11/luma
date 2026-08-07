@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { UserAvatar } from "@/components/account/UserAvatar";
+import { ADMIN_BASE_PATH } from "@/constants/admin";
 import { LINKS } from "@/constants/links";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,6 +13,7 @@ interface UserMenuProps {
     name: string;
     email: string;
     image?: string | null;
+    isAdmin?: boolean;
   };
 }
 
@@ -74,6 +76,11 @@ export function UserMenu({ user }: UserMenuProps) {
           </div>
 
           <div className="border-border-subtle border-t py-1.5">
+            {user.isAdmin && (
+              <MenuLink href={ADMIN_BASE_PATH} onClick={() => setOpen(false)}>
+                Admin dashboard
+              </MenuLink>
+            )}
             <MenuLink href={LINKS.site.profile} onClick={() => setOpen(false)}>
               View Profile
             </MenuLink>

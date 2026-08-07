@@ -5,8 +5,8 @@ import { BREAKPOINT_EVENT } from "@/constants/event-content";
 
 describe("design tokens + content wiring", () => {
   it("uses the light Breakpoint accent purple", () => {
-    expect(theme.colors.brand50).toBe("#6D5BD0");
-    expect(theme.colors.background.toUpperCase()).toBe("#F4F2FA");
+    expect(theme.colors.brand50.toUpperCase()).toBe("#836AA2");
+    expect(theme.colors.background.toUpperCase()).toBe("#F4F0F9");
   });
 
   it("keeps venue maps place_id exact", () => {

@@ -1,56 +1,48 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronDown, Pencil, Wallet } from "lucide-react";
-import {
-  BREAKPOINT_EVENT,
-  PAYMENT_COPY,
-  REGISTRATION_COPY,
-} from "@/constants/event-content";
+import { PAYMENT_COPY, REGISTRATION_COPY } from "@/constants/event-content";
 import { COUNTRIES } from "@/constants/countries";
 import { useTicketFlow } from "@/hooks/useTicketFlow";
 import { useAppSession } from "@/hooks/useSession";
-import { useWallet } from "@/hooks/useWallet";
-import { mockPayWithWallet } from "@/lib/solana/mock-tx";
 import {
   registrationSchema,
   type RegistrationSchema,
 } from "@/lib/validation/registrationSchema";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { UpdateNameModal } from "@/components/registration/UpdateNameModal";
-import { TransactionStatus } from "@/components/payment/TransactionStatus";
+import { ComingSoonDialog } from "@/components/registration/ComingSoonDialog";
+import {
+  agreementCheckboxClass,
+  agreementLabelClass,
+  fieldControlClass,
+  fieldHelperClass,
+  fieldLabelClass,
+  fieldSelectClass,
+  registrationFaintClass,
+  registrationHeadingClass,
+  registrationMutedClass,
+} from "@/components/registration/fieldStyles";
 import { cn } from "@/lib/utils/cn";
 
 const fields = REGISTRATION_COPY.fields;
 const agreements = REGISTRATION_COPY.agreements;
 
-interface RegistrationFormProps {
-  onPaid?: () => void;
-}
-
-export function RegistrationForm({ onPaid }: RegistrationFormProps) {
+export function RegistrationForm() {
   const { user, status } = useAppSession();
   const signedIn = status === "authenticated" && !!user;
+  const sessionName = user?.name ?? "";
+  const sessionEmail = user?.email ?? "";
+  const sessionImage = user?.image ?? null;
+  const sessionFirstName = user?.firstName ?? "Guest";
   const saved = useTicketFlow((s) => s.registration);
   const setRegistration = useTicketFlow((s) => s.setRegistration);
-  const discountUsd = useTicketFlow((s) => s.discountUsd);
-  const accessCode = useTicketFlow((s) => s.accessCode);
-  const txStatus = useTicketFlow((s) => s.txStatus);
-  const txError = useTicketFlow((s) => s.txError);
-  const setTxStatus = useTicketFlow((s) => s.setTxStatus);
-  const resetPayment = useTicketFlow((s) => s.resetPayment);
-  const setWalletAddress = useTicketFlow((s) => s.setWalletAddress);
 
-  const { address, connect, shortAddress, disconnect } = useWallet();
-  const [signature, setSignature] = useState<string | null>(null);
   const [nameModalOpen, setNameModalOpen] = useState(false);
-
-  const total = useMemo(
-    () => Math.max(BREAKPOINT_EVENT.ticket.priceUsd - discountUsd, 0),
-    [discountUsd],
-  );
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const {
     register,
@@ -58,6 +50,7 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
     control,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationSchema>({
     resolver: zodResolver(registrationSchema),
@@ -80,399 +73,333 @@ export function RegistrationForm({ onPaid }: RegistrationFormProps) {
     },
   });
 
+  const country = watch("country");
+  const ecosystemTenure = watch("ecosystemTenure");
+  const tshirtSize = watch("tshirtSize");
+
   useEffect(() => {
-    if (signedIn && user) {
-      setValue("name", user.name, { shouldValidate: true });
-      setValue("email", user.email, { shouldValidate: true });
-    }
-  }, [signedIn, user, setValue]);
+    if (!signedIn) return;
+    setValue("name", sessionName, { shouldValidate: true });
+    setValue("email", sessionEmail, { shouldValidate: true });
+  }, [signedIn, sessionName, sessionEmail, setValue]);
 
   useEffect(() => {
     if (!saved) return;
     reset({
       ...saved,
-      name: signedIn && user ? user.name : saved.name,
-      email: signedIn && user ? user.email : saved.email,
+      name: signedIn ? sessionName : saved.name,
+      email: signedIn ? sessionEmail : saved.email,
     });
-  }, [saved, reset, signedIn, user]);
+  }, [saved, reset, signedIn, sessionName, sessionEmail]);
 
-  async function pay(data: RegistrationSchema) {
+  const onSubmit = handleSubmit((data) => {
     setRegistration(data);
-    setSignature(null);
-
-    let wallet = address;
-    if (!wallet) {
-      setTxStatus("connecting");
-      wallet = await connect();
-      if (!wallet) {
-        setTxStatus("error", "Connect a wallet to pay");
-        return;
-      }
-      setWalletAddress(wallet);
-    }
-
-    setTxStatus("confirming");
-    const result = await mockPayWithWallet(total);
-    if (result.status === "success") {
-      setSignature(result.signature);
-      try {
-        await fetch("/api/registrations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            form: data,
-            ticketPriceUsd: BREAKPOINT_EVENT.ticket.priceUsd,
-            discountUsd,
-            amountPaidUsd: total,
-            accessCode: accessCode || null,
-            paymentSignature: result.signature,
-            walletAddress: wallet,
-            ticketStatus: "confirmed",
-            paymentStatus: "paid",
-          }),
-        });
-      } catch {
-        /* payment succeeded; booking persist is best-effort */
-      }
-      setTxStatus("success");
-    } else {
-      setTxStatus("error", result.error ?? "Transaction failed");
-    }
-  }
-
-  const onSubmit = handleSubmit((data) => void pay(data));
-
-  if (txStatus === "success") {
-    return (
-      <div className="mx-auto max-w-md space-y-5 py-8 text-center">
-        <div className="rounded-2xl border border-green-200 bg-green-50 px-6 py-8">
-          <p className="font-title text-foreground text-2xl font-semibold">
-            You’re going to Breakpoint
-          </p>
-          <p className="text-muted mt-2 text-sm">
-            Ticket for {saved?.legalName ?? saved?.name} · {BREAKPOINT_EVENT.title}
-          </p>
-          {signature && (
-            <p className="text-faint mt-4 font-mono text-xs break-all">
-              Receipt: {signature}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            resetPayment();
-            onPaid?.();
-          }}
-          className="bg-brand-50 hover:bg-brand-60 inline-flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-white"
-        >
-          Done
-        </button>
-      </div>
-    );
-  }
+    // Payment API not wired yet — validate only, then Coming Soon.
+    setComingSoonOpen(true);
+  });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <section className="space-y-4">
-        <h3 className="font-title text-foreground text-[22px] font-semibold tracking-tight">
-          {REGISTRATION_COPY.yourInfoHeading}
-        </h3>
+    <>
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <section className="space-y-4">
+          <h3 className={registrationHeadingClass}>
+            {REGISTRATION_COPY.yourInfoHeading}
+          </h3>
 
-        {signedIn && user ? (
-          <>
-            <input type="hidden" {...register("name")} />
-            <input type="hidden" {...register("email")} />
-            <div className="flex items-center gap-3">
-              <UserAvatar name={user.name} image={user.image} size="sm" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-foreground truncate text-sm font-semibold">
-                    {user.firstName}
+          {signedIn ? (
+            <>
+              <input type="hidden" {...register("name")} />
+              <input type="hidden" {...register("email")} />
+              <button
+                type="button"
+                onClick={() => setNameModalOpen(true)}
+                aria-label="Edit name"
+                className="focus-visible:ring-[#171717]/ring-offset-2 flex w-full items-center gap-3 rounded-xl text-left transition-colors hover:bg-[#F9FAFB] focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <UserAvatar name={sessionName} image={sessionImage} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold text-[#171717]">
+                      {sessionFirstName}
+                    </p>
+                    <Pencil
+                      className={cn("h-3.5 w-3.5 shrink-0", registrationMutedClass)}
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                  </div>
+                  <p className={cn(registrationMutedClass, "truncate text-sm")}>
+                    {sessionEmail}
                   </p>
-                  <button
-                    type="button"
-                    aria-label="Edit name"
-                    onClick={() => setNameModalOpen(true)}
-                    className="text-muted hover:text-foreground inline-flex shrink-0 bg-transparent p-0 transition-colors"
-                  >
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-                  </button>
                 </div>
-                <p className="text-muted truncate text-sm">{user.email}</p>
-              </div>
-            </div>
-
-            <UpdateNameModal
-              open={nameModalOpen}
-              initialName={user.name}
-              onClose={() => setNameModalOpen(false)}
-              onUpdated={(next) => {
-                setValue("name", next, { shouldValidate: true });
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <Field
-              id="name"
-              label={fields.name.label}
-              required
-              error={errors.name?.message}
-            >
-              <input
+              </button>
+            </>
+          ) : (
+            <>
+              <Field
                 id="name"
-                {...register("name")}
-                className={inputClass(!!errors.name)}
-                placeholder={fields.name.placeholder}
-                autoComplete="name"
-              />
-            </Field>
+                label={fields.name.label}
+                required
+                error={errors.name?.message}
+              >
+                <input
+                  id="name"
+                  {...register("name")}
+                  className={fieldControlClass(!!errors.name)}
+                  placeholder={fields.name.placeholder}
+                  autoComplete="name"
+                />
+              </Field>
 
-            <Field
-              id="email"
-              label={fields.email.label}
-              required
-              error={errors.email?.message}
-            >
-              <input
+              <Field
                 id="email"
-                type="email"
-                {...register("email")}
-                className={inputClass(!!errors.email)}
-                placeholder={fields.email.placeholder}
-                autoComplete="email"
-              />
-            </Field>
-          </>
-        )}
+                label={fields.email.label}
+                required
+                error={errors.email?.message}
+              >
+                <input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  className={fieldControlClass(!!errors.email)}
+                  placeholder={fields.email.placeholder}
+                  autoComplete="email"
+                />
+              </Field>
+            </>
+          )}
 
-        <Field
-          id="legalName"
-          label={fields.legalName.label}
-          required
-          helper={fields.legalName.helper}
-          error={errors.legalName?.message}
-        >
-          <input
+          <Field
             id="legalName"
-            {...register("legalName")}
-            className={inputClass(!!errors.legalName)}
-            autoComplete="name"
-          />
-        </Field>
+            label={fields.legalName.label}
+            required
+            helper={fields.legalName.helper}
+            error={errors.legalName?.message}
+          >
+            <input
+              id="legalName"
+              {...register("legalName")}
+              className={fieldControlClass(!!errors.legalName)}
+              autoComplete="name"
+            />
+          </Field>
 
-        <Field
-          id="company"
-          label={fields.company.label}
-          required
-          helper={fields.company.helper}
-          error={errors.company?.message}
-        >
-          <input
+          <Field
             id="company"
-            {...register("company")}
-            className={inputClass(!!errors.company)}
-            autoComplete="organization"
-          />
-        </Field>
+            label={fields.company.label}
+            required
+            helper={fields.company.helper}
+            error={errors.company?.message}
+          >
+            <input
+              id="company"
+              {...register("company")}
+              className={fieldControlClass(!!errors.company)}
+              autoComplete="organization"
+            />
+          </Field>
 
-        <Field
-          id="jobTitle"
-          label={fields.jobTitle.label}
-          error={errors.jobTitle?.message}
-        >
-          <input
+          <Field
             id="jobTitle"
-            {...register("jobTitle")}
-            className={inputClass(!!errors.jobTitle)}
-            autoComplete="organization-title"
-          />
-        </Field>
+            label={fields.jobTitle.label}
+            error={errors.jobTitle?.message}
+          >
+            <input
+              id="jobTitle"
+              {...register("jobTitle")}
+              className={fieldControlClass(!!errors.jobTitle)}
+              autoComplete="organization-title"
+            />
+          </Field>
 
-        <Field
-          id="country"
-          label={fields.country.label}
-          required
-          error={errors.country?.message}
-        >
-          <select
+          <Field
             id="country"
-            {...register("country")}
-            className={inputClass(!!errors.country)}
+            label={fields.country.label}
+            required
+            error={errors.country?.message}
           >
-            <option value="">Select a country</option>
-            {COUNTRIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <div className="relative">
+              <select
+                id="country"
+                {...register("country")}
+                className={cn(
+                  fieldSelectClass(!!errors.country),
+                  !country && registrationFaintClass,
+                )}
+              >
+                <option value="">Select a country</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <SelectChevron />
+            </div>
+          </Field>
 
-        <Field id="city" label={fields.city.label} error={errors.city?.message}>
-          <input
-            id="city"
-            {...register("city")}
-            className={inputClass(!!errors.city)}
-            autoComplete="address-level2"
-          />
-        </Field>
+          <Field id="city" label={fields.city.label} error={errors.city?.message}>
+            <input
+              id="city"
+              {...register("city")}
+              className={fieldControlClass(!!errors.city)}
+              autoComplete="address-level2"
+            />
+          </Field>
 
-        <Field id="github" label={fields.github.label} error={errors.github?.message}>
-          <input
-            id="github"
-            {...register("github")}
-            className={inputClass(!!errors.github)}
-            autoComplete="username"
-            placeholder="@username"
-          />
-        </Field>
+          <Field id="github" label={fields.github.label} error={errors.github?.message}>
+            <input
+              id="github"
+              {...register("github")}
+              className={fieldControlClass(!!errors.github)}
+              autoComplete="username"
+              placeholder="@username"
+            />
+          </Field>
 
-        <Field
-          id="ecosystemTenure"
-          label={fields.ecosystemTenure.label}
-          required
-          error={errors.ecosystemTenure?.message}
-        >
-          <select
+          <Field
             id="ecosystemTenure"
-            {...register("ecosystemTenure")}
-            className={inputClass(!!errors.ecosystemTenure)}
+            label={fields.ecosystemTenure.label}
+            required
+            error={errors.ecosystemTenure?.message}
           >
-            <option value="">Select an option</option>
-            {fields.ecosystemTenure.options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <div className="relative">
+              <select
+                id="ecosystemTenure"
+                {...register("ecosystemTenure")}
+                className={cn(
+                  fieldSelectClass(!!errors.ecosystemTenure),
+                  !ecosystemTenure && registrationFaintClass,
+                )}
+              >
+                <option value="">Select an option</option>
+                {fields.ecosystemTenure.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <SelectChevron />
+            </div>
+          </Field>
 
-        <Field
-          id="categories"
-          label={fields.categories.label}
-          required
-          error={errors.categories?.message}
-        >
-          <Controller
-            control={control}
-            name="categories"
-            render={({ field }) => (
-              <CategorySelect
-                id="categories"
-                options={[...fields.categories.options]}
-                value={field.value ?? []}
-                onChange={field.onChange}
-                invalid={!!errors.categories}
-                placeholder={fields.categories.helper}
-              />
-            )}
-          />
-        </Field>
+          <Field
+            id="categories"
+            label={fields.categories.label}
+            required
+            error={errors.categories?.message}
+          >
+            <Controller
+              control={control}
+              name="categories"
+              render={({ field }) => (
+                <CategorySelect
+                  id="categories"
+                  options={[...fields.categories.options]}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  invalid={!!errors.categories}
+                  placeholder={fields.categories.helper}
+                />
+              )}
+            />
+          </Field>
 
-        <Field
-          id="tshirtSize"
-          label={fields.tshirtSize.label}
-          error={errors.tshirtSize?.message}
-        >
-          <select
+          <Field
             id="tshirtSize"
-            {...register("tshirtSize")}
-            className={inputClass(!!errors.tshirtSize)}
+            label={fields.tshirtSize.label}
+            error={errors.tshirtSize?.message}
           >
-            <option value="">Select an option</option>
-            {fields.tshirtSize.options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </section>
+            <div className="relative">
+              <select
+                id="tshirtSize"
+                {...register("tshirtSize")}
+                className={cn(
+                  fieldSelectClass(!!errors.tshirtSize),
+                  !tshirtSize && registrationFaintClass,
+                )}
+              >
+                <option value="">Select an option</option>
+                {fields.tshirtSize.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <SelectChevron />
+            </div>
+          </Field>
+        </section>
 
-      <div className="space-y-3 pt-1">
-        <Agreement {...register("agreeTerms")} error={errors.agreeTerms?.message}>
-          I agree to the Terms and Conditions of the event:{" "}
-          <a
-            href={agreements.terms.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-50 font-medium underline-offset-2 hover:underline"
+        <div className="space-y-3 pt-1">
+          <Agreement {...register("agreeTerms")} error={errors.agreeTerms?.message}>
+            I agree to the Terms and Conditions of the event:{" "}
+            <a
+              href={agreements.terms.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#6B7280] underline-offset-2 hover:underline"
+            >
+              {agreements.terms.href}
+            </a>
+          </Agreement>
+          <Agreement
+            {...register("agreeCodeOfConduct")}
+            error={errors.agreeCodeOfConduct?.message}
           >
-            {agreements.terms.href}
-          </a>
-        </Agreement>
-        <Agreement
-          {...register("agreeCodeOfConduct")}
-          error={errors.agreeCodeOfConduct?.message}
-        >
-          I agree to abide by the Solana Foundation Code of Conduct:{" "}
-          <a
-            href={agreements.codeOfConduct.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-50 font-medium underline-offset-2 hover:underline"
+            I agree to abide by the Solana Foundation Code of Conduct:{" "}
+            <a
+              href={agreements.codeOfConduct.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#6B7280] underline-offset-2 hover:underline"
+            >
+              {agreements.codeOfConduct.href}
+            </a>
+          </Agreement>
+          <Agreement
+            {...register("agreeNonRefundable")}
+            error={errors.agreeNonRefundable?.message}
           >
-            {agreements.codeOfConduct.href}
-          </a>
-        </Agreement>
-        <Agreement
-          {...register("agreeNonRefundable")}
-          error={errors.agreeNonRefundable?.message}
-        >
-          {agreements.nonRefundable.label}
-        </Agreement>
-      </div>
-
-      <section className="border-border-subtle space-y-3 border-t pt-5">
-        <h3 className="font-title text-foreground text-[22px] font-semibold tracking-tight">
-          {PAYMENT_COPY.heading}
-        </h3>
-
-        <div
-          className="bg-surface-muted text-foreground flex h-11 items-center gap-2.5 rounded-xl px-3.5 text-sm font-medium"
-          aria-label={`${PAYMENT_COPY.methodLabel}: ${PAYMENT_COPY.methodValue}`}
-        >
-          <UsdcIcon />
-          {PAYMENT_COPY.methodValue}
+            {agreements.nonRefundable.label}
+          </Agreement>
         </div>
 
-        {txStatus !== "idle" && (
-          <TransactionStatus status={txStatus} error={txError} signature={signature} />
-        )}
+        <section className="space-y-3 border-t border-[#E5E7EB] pt-5">
+          <h3 className={registrationHeadingClass}>{PAYMENT_COPY.heading}</h3>
 
-        {address && (
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <span className="bg-brand-10 text-brand-70 rounded-full px-3 py-1 font-mono text-xs">
-              {shortAddress}
-            </span>
-            <button
-              type="button"
-              onClick={() => void disconnect()}
-              className="text-muted hover:text-foreground underline-offset-2 hover:underline"
-            >
-              Disconnect
-            </button>
+          <div
+            className="text-md flex h-[38px] items-center gap-2.5 rounded-[8px] bg-[#F3F4F6] px-3.5 font-medium text-[#171717]"
+            aria-label={`${PAYMENT_COPY.methodLabel}: ${PAYMENT_COPY.methodValue}`}
+          >
+            <UsdcIcon />
+            {PAYMENT_COPY.methodValue}
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={
-            isSubmitting || txStatus === "confirming" || txStatus === "connecting"
-          }
-          className="bg-brand-50 hover:bg-brand-60 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-[transform,background-color] active:scale-[0.99] disabled:opacity-50"
-        >
-          <Wallet className="h-4 w-4" strokeWidth={2} aria-hidden />
-          {txStatus === "connecting"
-            ? "Connecting wallet…"
-            : txStatus === "confirming"
-              ? "Confirming…"
-              : PAYMENT_COPY.payWithWallet}
-        </button>
-      </section>
-    </form>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171717] text-sm font-semibold text-white transition-[transform,opacity] hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+          >
+            <Wallet className="h-4 w-4" strokeWidth={2} aria-hidden />
+            {PAYMENT_COPY.payWithWallet}
+          </button>
+        </section>
+      </form>
+
+      {signedIn ? (
+        <UpdateNameModal
+          open={nameModalOpen}
+          initialName={sessionName}
+          onClose={() => setNameModalOpen(false)}
+          onUpdated={(next) => {
+            setValue("name", next, { shouldValidate: true });
+          }}
+        />
+      ) : null}
+
+      <ComingSoonDialog open={comingSoonOpen} onClose={() => setComingSoonOpen(false)} />
+    </>
   );
 }
 
@@ -493,15 +420,12 @@ function Field({
 }) {
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="text-foreground-secondary block text-[13px] font-medium"
-      >
+      <label htmlFor={id} className={fieldLabelClass}>
         {label}
-        {helper ? <span className="text-muted font-normal"> - {helper}</span> : null}
+        {helper ? <span className={fieldHelperClass}> - {helper}</span> : null}
         {required ? <RequiredMark /> : null}
       </label>
-      <div className="mt-1.5">{children}</div>
+      {children}
       {error ? (
         <p className="mt-1 text-sm text-red-600" role="alert">
           {error}
@@ -527,19 +451,15 @@ function Agreement({
 }: React.ComponentProps<"input"> & { error?: string }) {
   return (
     <div>
-      <label className="text-foreground flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug">
-        <input
-          type="checkbox"
-          className="border-border mt-0.5 h-4 w-4 shrink-0 rounded accent-[var(--foreground)]"
-          {...props}
-        />
+      <label className={agreementLabelClass}>
+        <input type="checkbox" className={agreementCheckboxClass} {...props} />
         <span>
           {children}
           <RequiredMark />
         </span>
       </label>
       {error ? (
-        <p className="mt-1 pl-6 text-sm text-red-600" role="alert">
+        <p className="mt-1 pl-7 text-sm text-red-600" role="alert">
           {error}
         </p>
       ) : null}
@@ -547,11 +467,12 @@ function Agreement({
   );
 }
 
-function inputClass(invalid: boolean): string {
-  return cn(
-    "border-border bg-surface-muted text-foreground h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition-colors",
-    "placeholder:text-faint focus-visible:border-brand-40 focus-visible:bg-white",
-    invalid && "border-red-400 focus-visible:border-red-400",
+function SelectChevron() {
+  return (
+    <ChevronDown
+      className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[#6B7280]"
+      aria-hidden
+    />
   );
 }
 
@@ -607,15 +528,15 @@ function CategorySelect({
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          inputClass(!!invalid),
-          "flex items-center justify-between gap-2 text-left",
-          value.length === 0 && "text-faint",
+          fieldControlClass(!!invalid),
+          "flex items-center justify-between gap-2 pr-9 text-left",
+          value.length === 0 && "text-[#9CA3AF]",
         )}
       >
         <span className="truncate">{label}</span>
         <ChevronDown
           className={cn(
-            "text-muted h-4 w-4 shrink-0 transition-transform",
+            "absolute top-1/2 right-3 h-4 w-4 shrink-0 -translate-y-1/2 text-[#6B7280] transition-transform",
             open && "rotate-180",
           )}
           aria-hidden
@@ -627,19 +548,19 @@ function CategorySelect({
           id={listId}
           role="listbox"
           aria-multiselectable="true"
-          className="border-border absolute right-0 left-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-xl border bg-white py-1 shadow-lg"
+          className="absolute right-0 left-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-[8px] border border-[#E5E7EB] bg-white py-1 shadow-lg"
         >
           {options.map((opt) => {
             const selected = value.includes(opt);
             return (
-              <li key={opt} role="option" aria-selected={selected}>
+              <li key={opt}>
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={selected}
                   className={cn(
-                    "flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm transition-colors",
-                    selected
-                      ? "bg-brand-5 text-brand-80"
-                      : "text-foreground hover:bg-surface-muted",
+                    "flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm text-[#171717] transition-colors",
+                    selected ? "bg-[#F3F4F6]" : "hover:bg-[#F9FAFB]",
                   )}
                   onClick={() => {
                     onChange(selected ? value.filter((v) => v !== opt) : [...value, opt]);
@@ -647,7 +568,7 @@ function CategorySelect({
                 >
                   {opt}
                   {selected ? (
-                    <Check className="text-brand-50 h-4 w-4 shrink-0" aria-hidden />
+                    <Check className="h-4 w-4 shrink-0 text-[#171717]" aria-hidden />
                   ) : null}
                 </button>
               </li>

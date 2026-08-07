@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { useSignInModal } from "@/components/auth/SignInModalProvider";
+import { useAppSession } from "@/hooks/useSession";
 import { cn } from "@/lib/utils/cn";
 
 interface FollowButtonProps {
@@ -21,11 +21,11 @@ export function FollowButton({
   initialFollowing = false,
   className,
 }: FollowButtonProps) {
-  const { data: session, status, update } = useSession();
+  const { status, update, isAuthenticated, user } = useAppSession();
   const { openSignIn } = useSignInModal();
   const [following, setFollowing] = useState(initialFollowing);
   const [pending, startTransition] = useTransition();
-  const isAuthed = status === "authenticated" && !!session?.user?.id;
+  const isAuthed = isAuthenticated && !!user?.id;
   const showFollowing = isAuthed && following;
 
   useEffect(() => {

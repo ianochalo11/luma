@@ -1,37 +1,53 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
+import { signIn as signInWithPasskey } from "next-auth/webauthn";
 import { FaGoogle } from "react-icons/fa";
-import { ChevronLeft, ClipboardPaste, DoorOpen, Fingerprint, Phone } from "lucide-react";
+import { ChevronLeft, ClipboardPaste, Fingerprint, LogIn, Phone } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-type Step = "email" | "code";
+type Step = "contact" | "code";
 
 interface EmailOtpAuthProps {
   onSuccess: () => void | Promise<void>;
-  /** Show the door icon (modal). Full-page can hide it. */
+  /** Show the LogIn icon (modal). Full-page can hide it. */
   showIcon?: boolean;
   className?: string;
+  /** Admin console: login copy only, no phone pivot, optional email allow-list. */
+  variant?: "default" | "admin";
+  /** When set (admin), only this email may request a code / continue. */
+  allowedEmail?: string;
 }
 
 /**
  * Luma-style email OTP: welcome → continue with email → 6-digit code.
+ * Phone can be collected first; verification always continues via email.
  */
 export function EmailOtpAuth({
   onSuccess,
   showIcon = true,
   className,
+  variant = "default",
+  allowedEmail,
 }: EmailOtpAuthProps) {
+  const isAdmin = variant === "admin";
+  const allowlist = allowedEmail?.toLowerCase().trim() || null;
   const titleId = useId();
-  const [step, setStep] = useState<Step>("email");
+  const contactInputRef = useRef<HTMLInputElement | null>(null);
+  const [step, setStep] = useState<Step>("contact");
   const [mode, setMode] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  /** After phone continue, soft-pivot to email without mentioning SMS limits. */
+  const [needsEmail, setNeedsEmail] = useState(false);
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [pending, setPending] = useState(false);
+  const [passkeyPending, setPasskeyPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googleHint, setGoogleHint] = useState<string | null>(null);
   const [passkeyHint, setPasskeyHint] = useState<string | null>(null);
+  const [googleAvailable, setGoogleAvailable] = useState<boolean | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -41,11 +57,25 @@ export function EmailOtpAuth({
     return () => window.clearTimeout(id);
   }, [resendIn]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void getProviders().then((providers) => {
+      if (cancelled) return;
+      setGoogleAvailable(Boolean(providers?.google));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function sendCode(targetEmail: string) {
     const res = await fetch("/api/auth/otp/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: targetEmail }),
+      body: JSON.stringify({
+        email: targetEmail,
+        ...(isAdmin ? { admin: true } : {}),
+      }),
     });
     const data = (await res.json()) as { ok?: boolean; error?: string };
     if (!res.ok || !data.ok) {
@@ -53,20 +83,37 @@ export function EmailOtpAuth({
     }
   }
 
-  async function continueWithEmail(e: React.FormEvent) {
+  function isValidPhone(value: string) {
+    const digitsOnly = value.replace(/\D/g, "");
+    return digitsOnly.length >= 8 && digitsOnly.length <= 15;
+  }
+
+  async function continueWithContact(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setPasskeyHint(null);
     setGoogleHint(null);
 
-    if (mode === "phone") {
-      setError("Phone sign-in is coming soon. Use email for now.");
+    if (!isAdmin && mode === "phone" && !needsEmail) {
+      const value = phone.trim();
+      if (!isValidPhone(value)) {
+        setError("Enter a valid phone number.");
+        return;
+      }
+      setNeedsEmail(true);
+      setMode("email");
+      setError(null);
+      window.setTimeout(() => contactInputRef.current?.focus(), 50);
       return;
     }
 
     const value = email.trim().toLowerCase();
     if (!value.includes("@")) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (allowlist && value !== allowlist) {
+      setError("This email is not authorized for admin access.");
       return;
     }
 
@@ -167,69 +214,154 @@ export function EmailOtpAuth({
     setGoogleHint(null);
     setError(null);
     try {
-      const result = await signIn("google", { redirect: false });
+      const providers = await getProviders();
+      // next-auth hard-navigates to /sign-in when "google" is missing — don't call signIn.
+      if (!providers?.google) {
+        setGoogleAvailable(false);
+        setGoogleHint(
+          "Google sign-in isn’t configured. Add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to .env.local, restart the dev server, and use a Google OAuth client with redirect URI http://localhost:3000/api/auth/callback/google.",
+        );
+        return;
+      }
+
+      // OAuth must leave the page for Google. With redirect:false we still have to
+      // navigate to result.url — otherwise Auth never reaches Google.
+      const result = await signIn("google", {
+        redirect: false,
+        callbackUrl: window.location.href,
+      });
       if (result?.error) {
         setGoogleHint(
-          "Google sign-in isn’t configured yet. Set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET, or continue with email.",
+          "Google sign-in failed. Check AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET and the Google Cloud redirect URI, or continue with email.",
         );
+        return;
+      }
+      if (result?.url) {
+        window.location.assign(result.url);
         return;
       }
       if (result?.ok) await onSuccess();
     } catch {
-      setGoogleHint("Google sign-in isn’t configured yet. Use email for now.");
+      setGoogleHint("Google sign-in isn’t available right now. Use email for now.");
     }
   }
 
+  async function continueWithPasskey() {
+    setPasskeyHint(null);
+    setGoogleHint(null);
+    setError(null);
+    setPasskeyPending(true);
+    try {
+      const result = await signInWithPasskey("passkey", { redirect: false });
+      if (!result) {
+        setPasskeyHint(
+          "Passkey sign-in didn’t complete. Try again, or continue with email.",
+        );
+        return;
+      }
+      if (result.error) {
+        setPasskeyHint(
+          "No matching passkey, or the request was cancelled. Add a passkey in Settings after signing in with email.",
+        );
+        return;
+      }
+      if (result.ok) await onSuccess();
+    } catch {
+      setPasskeyHint(
+        "Passkeys aren’t available in this browser, or the prompt was dismissed. Use email instead.",
+      );
+    } finally {
+      setPasskeyPending(false);
+    }
+  }
+
+  const showPhoneField = !isAdmin && mode === "phone" && !needsEmail;
+
   return (
     <div className={className}>
-      {step === "email" ? (
+      {step === "contact" ? (
         <>
-          {showIcon && (
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#f0eef6] text-[#3f3f46]">
-              <DoorOpen className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-            </div>
+          {needsEmail ? (
+            <button
+              type="button"
+              onClick={() => {
+                setNeedsEmail(false);
+                setMode("phone");
+                setError(null);
+                window.setTimeout(() => contactInputRef.current?.focus(), 50);
+              }}
+              className="mb-5 flex h-9 w-9 items-center justify-center rounded-full bg-[#f4f4f5] text-[#111111] transition-colors hover:bg-[#e4e4e7]"
+              aria-label="Back"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+            </button>
+          ) : (
+            showIcon && (
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
+                <LogIn
+                  className="h-5 w-5 text-neutral-700"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+              </div>
+            )
           )}
           <h2
             id={titleId}
             className="text-[22px] font-semibold tracking-tight text-[#111111]"
           >
-            Welcome to Luma
+            {needsEmail
+              ? "Confirm your email"
+              : isAdmin
+                ? "Admin sign in"
+                : "Welcome to Luma"}
           </h2>
           <p className="mt-1.5 text-sm text-[#6b7280]">
-            Please sign in or sign up below.
+            {needsEmail
+              ? "We’ll send a one-time code to your email to finish signing in."
+              : isAdmin
+                ? "Sign in with your admin email. New accounts can’t be created here."
+                : "Please sign in or sign up below."}
           </p>
 
-          <form onSubmit={continueWithEmail} className="mt-7 space-y-3">
+          <form onSubmit={continueWithContact} className="mt-7 space-y-3">
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <label htmlFor="luma-signin-input" className="text-sm text-[#6b7280]">
-                Email
+                {showPhoneField ? "Phone" : "Email"}
               </label>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#111111]"
-                onClick={() => {
-                  setMode((m) => (m === "email" ? "phone" : "email"));
-                  setError(null);
-                }}
-              >
-                {mode === "email" ? (
-                  <>
-                    <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    Use Phone Number
-                  </>
-                ) : (
-                  "Use Email"
-                )}
-              </button>
+              {!isAdmin && !needsEmail && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#111111]"
+                  onClick={() => {
+                    setMode((m) => (m === "email" ? "phone" : "email"));
+                    setError(null);
+                    window.setTimeout(() => contactInputRef.current?.focus(), 50);
+                  }}
+                >
+                  {mode === "email" ? (
+                    <>
+                      <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Use Phone Number
+                    </>
+                  ) : (
+                    "Use Email"
+                  )}
+                </button>
+              )}
             </div>
             <input
+              ref={contactInputRef}
               id="luma-signin-input"
-              type={mode === "email" ? "email" : "tel"}
-              autoComplete={mode === "email" ? "email" : "tel"}
+              type={showPhoneField ? "tel" : "email"}
+              autoComplete={showPhoneField ? "tel" : "email"}
+              inputMode={showPhoneField ? "tel" : "email"}
               required
-              value={mode === "email" ? email : ""}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={mode === "email" ? "you@email.com" : "+1 555 000 0000"}
+              value={showPhoneField ? phone : email}
+              onChange={(e) =>
+                showPhoneField ? setPhone(e.target.value) : setEmail(e.target.value)
+              }
+              placeholder={showPhoneField ? "+1 555 000 0000" : "you@email.com"}
               className="h-11 w-full rounded-lg border border-[#d4d4d8] bg-white px-3 text-sm text-[#111111] transition-colors outline-none placeholder:text-[#a1a1aa] focus:border-[#111111]"
             />
 
@@ -241,53 +373,64 @@ export function EmailOtpAuth({
 
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || passkeyPending}
               className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#111111] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {pending ? "Sending code…" : "Continue with Email"}
+              {pending
+                ? "Sending code…"
+                : showPhoneField
+                  ? "Continue"
+                  : "Continue with Email"}
             </button>
           </form>
 
-          <div className="my-5 border-t border-[#ececef]" />
+          {!needsEmail && (
+            <>
+              <div className="my-5 border-t border-[#ececef]" />
 
-          <div className="space-y-2.5">
-            <button
-              type="button"
-              onClick={() => void continueWithGoogle()}
-              className={cn(
-                "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[#f4f4f5]",
-                "text-sm font-medium text-[#27272a] transition-colors hover:bg-[#e4e4e7]",
-              )}
-            >
-              <FaGoogle className="h-4 w-4" />
-              Sign in with Google
-            </button>
-            {googleHint && <p className="text-xs text-[#6b7280]">{googleHint}</p>}
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => void continueWithGoogle()}
+                  className={cn(
+                    "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[#f4f4f5]",
+                    "text-sm font-medium text-[#27272a] transition-colors hover:bg-[#e4e4e7]",
+                  )}
+                >
+                  <FaGoogle className="h-4 w-4" />
+                  Sign in with Google
+                </button>
+                {(googleHint || googleAvailable === false) && (
+                  <p className="text-xs text-[#6b7280]">
+                    {googleHint ??
+                      "Google isn’t configured (missing AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET). Use email, or add those keys and restart the server."}
+                  </p>
+                )}
 
-            <button
-              type="button"
-              onClick={() =>
-                setPasskeyHint(
-                  "Passkeys (WebAuthn) aren’t wired yet — use email to continue.",
-                )
-              }
-              className={cn(
-                "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[#f4f4f5]",
-                "text-sm font-medium text-[#27272a] transition-colors hover:bg-[#e4e4e7]",
-              )}
-            >
-              <Fingerprint className="h-4 w-4" strokeWidth={1.75} />
-              Sign in with Passkey
-            </button>
-            {passkeyHint && <p className="text-xs text-[#6b7280]">{passkeyHint}</p>}
-          </div>
+                <button
+                  type="button"
+                  disabled={pending || passkeyPending}
+                  onClick={() => void continueWithPasskey()}
+                  className={cn(
+                    "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[#f4f4f5]",
+                    "text-sm font-medium text-[#27272a] transition-colors hover:bg-[#e4e4e7]",
+                    "disabled:opacity-50",
+                  )}
+                >
+                  <Fingerprint className="h-4 w-4" strokeWidth={1.75} />
+                  {passkeyPending ? "Waiting for passkey…" : "Sign in with Passkey"}
+                </button>
+                {passkeyHint && <p className="text-xs text-[#6b7280]">{passkeyHint}</p>}
+              </div>
+            </>
+          )}
         </>
       ) : (
         <>
           <button
             type="button"
             onClick={() => {
-              setStep("email");
+              setStep("contact");
               setError(null);
               setDigits(["", "", "", "", "", ""]);
             }}

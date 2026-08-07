@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { isAdminLoginPath, isAdminPath } from "@/constants/admin";
 
 /**
  * Edge-safe Auth.js config for middleware.
@@ -43,13 +44,15 @@ export const authConfig = {
     },
     async authorized({ auth: session, request }) {
       const { pathname } = request.nextUrl;
+      if (isAdminLoginPath(pathname)) return true;
+
       const isProtected =
         pathname.startsWith("/profile") ||
         pathname.startsWith("/settings") ||
-        pathname.startsWith("/admin");
+        isAdminPath(pathname);
 
       if (isProtected && !session?.user) return false;
-      if (pathname.startsWith("/admin") && !session?.user?.isAdmin) {
+      if (isAdminPath(pathname) && !session?.user?.isAdmin) {
         return false;
       }
       return true;

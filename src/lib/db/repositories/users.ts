@@ -1,3 +1,4 @@
+import { resolveAdminEmail } from "@/constants/admin";
 import { connectDb } from "@/lib/db/client";
 import { UserModel, type UserDocument } from "@/lib/db/models";
 
@@ -6,7 +7,7 @@ export interface AppUserRecord {
   name: string;
   email: string;
   image: string | null;
-  authProvider: "email" | "google" | "credentials" | "github";
+  authProvider: "email" | "google" | "credentials" | "github" | "passkey";
   isAdmin: boolean;
   createdAt: string;
 }
@@ -64,7 +65,7 @@ export async function upsertUserOnSignIn(input: {
 }): Promise<AppUserRecord> {
   await connectDb();
   const email = input.email.toLowerCase().trim();
-  const adminEmail = (process.env.ADMIN_EMAIL ?? "").toLowerCase().trim();
+  const adminEmail = resolveAdminEmail();
   const shouldAdmin = Boolean(adminEmail && email === adminEmail);
 
   const existing = await UserModel.findOne({ email });
@@ -82,8 +83,8 @@ export async function upsertUserOnSignIn(input: {
       existing.authProvider = input.authProvider;
       changed = true;
     }
-    if (shouldAdmin && !existing.isAdmin) {
-      existing.isAdmin = true;
+    if (existing.isAdmin !== shouldAdmin) {
+      existing.isAdmin = shouldAdmin;
       changed = true;
     }
     if (changed) await existing.save();
@@ -94,7 +95,7 @@ export async function upsertUserOnSignIn(input: {
     email,
     name: input.name?.trim() || displayNameFromEmail(email),
     image: input.image ?? null,
-    authProvider: input.authProvider as "email" | "google" | "credentials" | "github",
+    authProvider: input.authProvider,
     isAdmin: shouldAdmin,
   });
 

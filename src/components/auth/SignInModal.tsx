@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { BrowserVerification } from "@/components/auth/BrowserVerification";
 import { EmailOtpAuth } from "@/components/auth/EmailOtpAuth";
 
 interface SignInModalProps {
@@ -9,7 +10,9 @@ interface SignInModalProps {
   onSuccess: () => void | Promise<void>;
 }
 
-/** Luma-style auth modal: welcome → email → 6-digit code (Resend OTP). */
+const VERIFY_MS = 1600;
+
+/** Luma-style auth modal: browser check → welcome → email → 6-digit code. */
 export function SignInModal({ open, onClose, onSuccess }: SignInModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -25,7 +28,19 @@ export function SignInModal({ open, onClose, onSuccess }: SignInModalProps) {
     };
   }, [open, onClose]);
 
+  // Unmount while closed so verify state resets cleanly on next open.
   if (!open) return null;
+
+  return <SignInModalContent onClose={onClose} onSuccess={onSuccess} />;
+}
+
+function SignInModalContent({ onClose, onSuccess }: Omit<SignInModalProps, "open">) {
+  const [verifying, setVerifying] = useState(true);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setVerifying(false), VERIFY_MS);
+    return () => window.clearTimeout(id);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -39,10 +54,15 @@ export function SignInModal({ open, onClose, onSuccess }: SignInModalProps) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Sign in"
+        aria-label={verifying ? "Verifying your browser" : "Sign in"}
+        aria-busy={verifying}
         className="relative w-full max-w-[400px] rounded-[22px] bg-white p-8 shadow-2xl"
       >
-        <EmailOtpAuth key={String(open)} onSuccess={onSuccess} showIcon />
+        {verifying ? (
+          <BrowserVerification />
+        ) : (
+          <EmailOtpAuth onSuccess={onSuccess} showIcon />
+        )}
       </div>
     </div>
   );

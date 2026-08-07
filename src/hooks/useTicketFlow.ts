@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { ACCESS_CODES } from "@/constants/access-codes";
 import type { RegistrationSchema } from "@/lib/validation/registrationSchema";
+import type { TxStatus } from "@/types/payment";
 
-export type TxStatus = "idle" | "connecting" | "confirming" | "success" | "error";
+export type { TxStatus };
 
 interface TicketFlowState {
   registration: Partial<RegistrationSchema> | null;
@@ -21,12 +23,6 @@ interface TicketFlowState {
   clear: () => void;
 }
 
-/** Demo access code — 10% off for UX testing */
-const VALID_CODES: Record<string, number> = {
-  SOLANA10: 55,
-  BREAKPOINT: 50,
-};
-
 export const useTicketFlow = create<TicketFlowState>()(
   persist(
     (set) => ({
@@ -44,7 +40,7 @@ export const useTicketFlow = create<TicketFlowState>()(
       setAccessCode: (code) => set({ accessCode: code }),
       applyAccessCode: (code) => {
         const normalized = code.trim().toUpperCase();
-        const discount = VALID_CODES[normalized] ?? 0;
+        const discount = ACCESS_CODES[normalized] ?? 0;
         set({ accessCode: normalized, discountUsd: discount });
         return discount > 0;
       },

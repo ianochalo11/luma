@@ -13,11 +13,7 @@ export function SiteFooter() {
         style={pageShellStyle}
       >
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <Link
-            href={LINKS.site.home}
-            className="text-nav hover:text-muted transition-colors"
-            aria-label="Luma Home"
-          >
+          <Link href={LINKS.site.home} className="text-nav" aria-label="Luma Home">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 133 134"
@@ -36,7 +32,6 @@ export function SiteFooter() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="hover:text-muted transition-colors"
                 {...(item.href.startsWith("http")
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
@@ -53,7 +48,7 @@ export function SiteFooter() {
             target="_blank"
             rel="nofollow noopener"
             aria-label="Luma on Instagram"
-            className="hover:text-muted rounded-md p-1.5 transition-colors"
+            className="rounded-md p-1.5"
           >
             <FaInstagram className="h-4 w-4" />
           </a>
@@ -62,14 +57,14 @@ export function SiteFooter() {
             target="_blank"
             rel="nofollow noopener"
             aria-label="Luma on X"
-            className="hover:text-muted rounded-md p-1.5 transition-colors"
+            className="rounded-md p-1.5"
           >
             <FaXTwitter className="h-4 w-4" />
           </a>
           <a
             href={LINKS.social.lumaSupportEmail}
             aria-label="Contact Us"
-            className="hover:text-muted rounded-md p-1.5 transition-colors"
+            className="rounded-md p-1.5"
           >
             <Mail className="h-4 w-4" strokeWidth={1.75} />
           </a>
@@ -77,7 +72,7 @@ export function SiteFooter() {
             href={LINKS.site.app}
             target="_blank"
             rel="noopener noreferrer"
-            className="border-border/80 text-nav hover:text-muted ml-1 inline-flex h-8 items-center rounded-full border bg-transparent px-3 text-xs font-medium transition-colors"
+            className="border-border/80 text-nav ml-1 inline-flex h-8 items-center rounded-full border bg-transparent px-3 text-xs font-medium"
           >
             Get the App
           </Link>

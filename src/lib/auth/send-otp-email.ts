@@ -1,14 +1,69 @@
 import "server-only";
 import { Resend } from "resend";
 
+/** Resend accepts `email@example.com` or `Name <email@example.com>`. */
+const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+const NAME_EMAIL_RE = /^([^<>]+)<\s*([^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)\s*>$/;
+
 function getResend() {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY is not set");
   return new Resend(key);
 }
 
+/**
+ * Normalize RESEND_FROM from .env — strip quotes, smart quotes, and accidental
+ * duplicates like `Luma <a@b.com> Luma <a@b.com>`.
+ */
+export function normalizeResendFrom(raw: string): string | null {
+  let s = raw.trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").trim();
+
+  if (EMAIL_RE.test(s)) return s;
+
+  const named = s.match(NAME_EMAIL_RE);
+  const namedName = named?.[1];
+  const namedEmail = named?.[2];
+  if (namedName != null && namedEmail != null) {
+    const name = namedName.trim();
+    const email = namedEmail.trim();
+    return name ? `${name} <${email}>` : email;
+  }
+
+  // First `Name <email>` occurrence (handles duplicated values in .env).
+  const firstNamed = s.match(/([^<>]*?)<\s*([^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)\s*>/);
+  const firstName = firstNamed?.[1];
+  const firstEmail = firstNamed?.[2];
+  if (firstName != null && firstEmail != null) {
+    const name = firstName.trim();
+    const email = firstEmail.trim();
+    return name ? `${name} <${email}>` : email;
+  }
+
+  // Bare email anywhere in the string.
+  const bareEmail = s.match(/[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/)?.[0];
+  if (bareEmail && EMAIL_RE.test(bareEmail)) return bareEmail;
+
+  return null;
+}
+
 function fromAddress(): string {
-  return process.env.RESEND_FROM?.trim() || "Luma <onboarding@resend.dev>";
+  const raw = process.env.RESEND_FROM?.trim();
+  if (!raw) {
+    throw new Error(
+      "RESEND_FROM is not set. Use email@example.com or Name <email@example.com> (e.g. Luma <onboarding@resend.dev>).",
+    );
+  }
+  const normalized = normalizeResendFrom(raw);
+  if (!normalized) {
+    throw new Error(
+      "Invalid RESEND_FROM. Use email@example.com or Name <email@example.com> (e.g. Luma <onboarding@resend.dev>).",
+    );
+  }
+  return normalized;
 }
 
 /** Minimal HTML matching Luma’s sign-in code email. */
