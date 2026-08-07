@@ -5,6 +5,10 @@ import { BREAKPOINT_EVENT, PAYMENT_COPY } from "@/constants/event-content";
 import { useTicketFlow } from "@/hooks/useTicketFlow";
 import { formatCurrency } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
+import {
+  fieldControlClass,
+  registrationAccentClass,
+} from "@/components/registration/fieldStyles";
 
 /** Sticky order summary — same radius/padding language as the form inputs. */
 export function OrderSummaryCard() {
@@ -21,7 +25,7 @@ export function OrderSummaryCard() {
 
   return (
     <aside
-      className="border-border w-full rounded-xl border bg-white p-4"
+      className="w-full rounded-xl border border-[#E5E7EB] bg-white p-4"
       aria-label={PAYMENT_COPY.orderSummary}
     >
       <div className="flex gap-3">
@@ -32,10 +36,10 @@ export function OrderSummaryCard() {
           className="h-12 w-12 shrink-0 rounded-lg object-cover"
         />
         <div className="min-w-0">
-          <p className="text-foreground truncate text-sm font-semibold">
+          <p className="truncate text-sm font-semibold text-[#171717]">
             {BREAKPOINT_EVENT.title}
           </p>
-          <p className="text-muted mt-0.5 text-xs">Nov 15, 4:00 PM GMT</p>
+          <p className="mt-0.5 text-xs text-[#6B7280]">Nov 15, 4:00 PM GMT</p>
         </div>
       </div>
 
@@ -44,7 +48,7 @@ export function OrderSummaryCard() {
           <div className="space-y-2">
             <label
               htmlFor="coupon-code"
-              className="text-foreground block text-xs font-medium"
+              className="block text-xs font-medium text-[#171717]"
             >
               Coupon code
             </label>
@@ -53,14 +57,14 @@ export function OrderSummaryCard() {
                 id="coupon-code"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                className="border-border bg-surface-muted text-foreground focus-visible:border-brand-50 h-10 min-w-0 flex-1 rounded-xl border px-3 text-sm outline-none"
+                className={fieldControlClass(false, "min-w-0 flex-1")}
                 placeholder="e.g. SOLANA10"
                 autoComplete="off"
               />
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-10 shrink-0 rounded-xl"
+                className="h-[38px] shrink-0 rounded-[8px]"
                 onClick={() => {
                   const ok = applyAccessCode(codeInput);
                   setCodeMessage(
@@ -72,12 +76,12 @@ export function OrderSummaryCard() {
               </Button>
             </div>
             {codeMessage && (
-              <p className="text-muted text-xs" role="status">
+              <p className="text-xs text-[#6B7280]" role="status">
                 {codeMessage}
               </p>
             )}
             {discountUsd > 0 && (
-              <p className="text-brand-60 text-xs font-medium">
+              <p className="text-xs font-medium text-[#6d5788]">
                 −{formatCurrency(discountUsd)}
                 {accessCode ? ` (${accessCode})` : ""}
               </p>
@@ -85,7 +89,7 @@ export function OrderSummaryCard() {
             <button
               type="button"
               onClick={() => setShowCoupon(false)}
-              className="text-muted text-xs underline-offset-2 hover:underline"
+              className="text-xs text-[#6B7280] underline-offset-2 hover:underline"
             >
               Cancel
             </button>
@@ -94,16 +98,16 @@ export function OrderSummaryCard() {
           <button
             type="button"
             onClick={() => setShowCoupon(true)}
-            className="text-brand-50 text-sm font-medium hover:underline"
+            className={`${registrationAccentClass} text-sm font-medium hover:underline`}
           >
             {PAYMENT_COPY.addCoupon}
           </button>
         )}
       </div>
 
-      <div className="border-border-subtle mt-4 flex items-baseline justify-between gap-3 border-t pt-3">
-        <span className="text-muted text-sm">{PAYMENT_COPY.total}</span>
-        <span className="text-foreground text-xl font-bold tracking-tight">
+      <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-[#E5E7EB] pt-3">
+        <span className="text-sm text-[#6B7280]">{PAYMENT_COPY.total}</span>
+        <span className="text-xl font-bold tracking-tight text-[#171717]">
           {formatCurrency(total)}
         </span>
       </div>

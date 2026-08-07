@@ -1,7 +1,8 @@
 /**
  * Light-theme tokens sampled from https://luma.com/breakpoint2026
+ * Keep values in sync with `src/app/globals.css` `:root` (CSS is the runtime source).
  * Primary text: --black-base-rgb 29,3,51 → #1D0333
- * Brand: #836aa2
+ * Brand accent: #836AA2
  */
 
 export const theme = {

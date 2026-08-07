@@ -77,11 +77,11 @@ export function TicketWidget({ event }: TicketWidgetProps) {
             </p>
           </div>
 
-          {/* Welcome + identity */}
+          {/* Welcome + identity — matches Luma signed-in ticket card */}
           <div>
             <p className="text-foreground text-md leading-snug">{welcome}</p>
             {signedIn ? (
-              <div className="mt-3 flex min-w-0 items-center gap-2">
+              <div className="mt-3 flex min-w-0 items-center gap-2.5">
                 <UserAvatar
                   name={user.name}
                   image={user.image}

@@ -12,9 +12,10 @@ const UserSchema = new Schema(
       index: true,
     },
     image: { type: String, default: null },
+    emailVerified: { type: Date, default: null },
     authProvider: {
       type: String,
-      enum: ["email", "google", "credentials", "github"],
+      enum: ["email", "google", "credentials", "github", "passkey"],
       default: "email",
     },
     isAdmin: { type: Boolean, default: false, index: true },

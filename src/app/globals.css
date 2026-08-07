@@ -179,6 +179,25 @@
   .text-tinted {
     color: #503e65cc;
   }
+
+  /* Registration page: scrollbar on the far right of the viewport. */
+  .registration-page-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #555555 transparent;
+  }
+
+  .registration-page-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .registration-page-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .registration-page-scroll::-webkit-scrollbar-thumb {
+    background: #555555;
+    border-radius: 4px;
+  }
 }
 
 /* Admin-only theme tokens — scoped to .admin-root, never affects public pages */

@@ -1,18 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Ticket } from "lucide-react";
+import { Fingerprint, Ticket } from "lucide-react";
+import { signIn } from "next-auth/webauthn";
 import { BREAKPOINT_EVENT } from "@/constants/event-content";
 import { LINKS } from "@/constants/links";
 import { useAppSession } from "@/hooks/useSession";
 import { useTicketFlow } from "@/hooks/useTicketFlow";
 import { UserAvatar } from "@/components/account/UserAvatar";
 
-/** Signed-in home: identity + tickets empty/filled states. */
+/** Signed-in home: identity + tickets + passkey registration. */
 export function SettingsForm() {
   const { user } = useAppSession();
   const registration = useTicketFlow((s) => s.registration);
   const txStatus = useTicketFlow((s) => s.txStatus);
+  const [passkeyPending, setPasskeyPending] = useState(false);
+  const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -26,6 +31,32 @@ export function SettingsForm() {
   }
 
   const hasTicket = txStatus === "success" || !!registration;
+
+  async function addPasskey() {
+    setPasskeyMessage(null);
+    setPasskeyError(null);
+    setPasskeyPending(true);
+    try {
+      const result = await signIn("passkey", { action: "register", redirect: false });
+      if (!result) {
+        setPasskeyError("Passkey registration didn’t complete. Try again.");
+        return;
+      }
+      if (result.error) {
+        setPasskeyError("Could not add a passkey. The request may have been cancelled.");
+        return;
+      }
+      if (result.ok) {
+        setPasskeyMessage("Passkey added. You can use it next time you sign in.");
+      }
+    } catch {
+      setPasskeyError(
+        "Passkeys aren’t available in this browser, or the prompt was dismissed.",
+      );
+    } finally {
+      setPasskeyPending(false);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-[640px] space-y-8">
@@ -93,6 +124,36 @@ export function SettingsForm() {
             </Link>
           </div>
         )}
+      </section>
+
+      <section>
+        <h2 className="text-foreground text-base font-semibold tracking-tight">
+          Passkeys
+        </h2>
+        <p className="text-muted mt-1 text-sm">
+          Sign in with your fingerprint, face, or device PIN instead of an email code.
+        </p>
+        <div className="border-border bg-surface mt-4 rounded-2xl border p-5 shadow-sm">
+          <button
+            type="button"
+            disabled={passkeyPending}
+            onClick={() => void addPasskey()}
+            className="bg-foreground hover:bg-brand-90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 sm:w-auto sm:px-5"
+          >
+            <Fingerprint className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {passkeyPending ? "Waiting for passkey…" : "Add a passkey"}
+          </button>
+          {passkeyMessage && (
+            <p className="mt-3 text-sm text-green-700" role="status">
+              {passkeyMessage}
+            </p>
+          )}
+          {passkeyError && (
+            <p className="mt-3 text-sm text-red-600" role="alert">
+              {passkeyError}
+            </p>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -1,8 +1,26 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import Passkey from "next-auth/providers/passkey";
 import { DEMO_USER } from "@/constants/event-content";
+import { MongoAuthAdapter } from "@/lib/auth/adapter";
 import { authConfig } from "@/lib/auth/config";
+
+function passkeyRelayingParty() {
+  if (!process.env.AUTH_URL) return {};
+  try {
+    const url = new URL(process.env.AUTH_URL);
+    return {
+      relayingParty: {
+        id: url.hostname,
+        name: "Luma",
+        origin: url.origin,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
 
 let seeded = false;
 
@@ -30,13 +48,17 @@ async function upsertUser(input: {
 
 /**
  * Auth.js v5
- * - Email OTP: Continue with Email → Resend code → verify via `email-otp`.
- * - Credentials demo: joseph / demo for local admin UX.
+ * - Email OTP (primary UI): Continue with Email → Resend code → verify via `email-otp`.
+ * - Passkey: discoverable sign-in + registration from Settings (`signIn("passkey")`).
+ * - Credentials: used by `/sign-up` and Playwright helpers (not shown on OTP screens).
  * - Google: enabled when AUTH_GOOGLE_ID/SECRET are set.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  adapter: MongoAuthAdapter(),
+  experimental: { enableWebAuthn: true },
   providers: [
+    Passkey(passkeyRelayingParty()),
     Credentials({
       id: "email-otp",
       name: "Email OTP",
@@ -71,16 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
-    Credentials({
-      id: "email",
-      name: "Email (legacy)",
-      credentials: {
-        email: { label: "Email", type: "email" },
-      },
-      async authorize() {
-        return null;
-      },
-    }),
+    /** Demo / sign-up / e2e helper — product UI uses email OTP. */
     Credentials({
       id: "credentials",
       name: "Demo",
@@ -137,6 +150,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           Google({
             clientId: process.env.AUTH_GOOGLE_ID,
             clientSecret: process.env.AUTH_GOOGLE_SECRET,
+            // Existing OTP/Google users predate Account rows; allow linking by verified email.
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
@@ -154,6 +169,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         user.id = dbUser.id;
         user.isAdmin = dbUser.isAdmin;
+      }
+      if (account?.provider === "passkey" && user.id) {
+        const { findUserById } = await import("@/lib/db/repositories/users");
+        const dbUser = await findUserById(user.id);
+        if (dbUser) user.isAdmin = dbUser.isAdmin;
       }
       return true;
     },

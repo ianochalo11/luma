@@ -23,7 +23,6 @@ export function SignUpForm() {
     }
     setPending(true);
     setError(null);
-    // Stub sign-up: create session via credentials (no persistence backend yet)
     const result = await signIn("credentials", {
       email,
       password,
@@ -43,7 +42,8 @@ export function SignUpForm() {
     <div className="border-border bg-surface rounded-xl border p-8 shadow-sm">
       <h1 className="font-title text-2xl font-semibold tracking-tight">Create account</h1>
       <p className="text-muted mt-2 text-sm">
-        Stub sign-up — sessions are JWT-only until a database adapter is wired.
+        Creates a MongoDB user and JWT session. Prefer email OTP on Sign in for the
+        production-style flow.
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
