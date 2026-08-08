@@ -14,7 +14,6 @@ import {
 } from "@/lib/validation/registrationSchema";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { UpdateNameModal } from "@/components/registration/UpdateNameModal";
-import { ComingSoonDialog } from "@/components/registration/ComingSoonDialog";
 import {
   agreementCheckboxClass,
   agreementLabelClass,
@@ -42,7 +41,6 @@ export function RegistrationForm() {
   const setRegistration = useTicketFlow((s) => s.setRegistration);
 
   const [nameModalOpen, setNameModalOpen] = useState(false);
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const {
     register,
@@ -92,10 +90,14 @@ export function RegistrationForm() {
     });
   }, [saved, reset, signedIn, sessionName, sessionEmail]);
 
+  function openModal() {
+    // TODO: AppKit open({ view: "Connect", namespace: "solana" })
+    console.log("openModal");
+  }
+
   const onSubmit = handleSubmit((data) => {
     setRegistration(data);
-    // Payment API not wired yet — validate only, then Coming Soon.
-    setComingSoonOpen(true);
+    openModal();
   });
 
   return (
@@ -397,8 +399,6 @@ export function RegistrationForm() {
           }}
         />
       ) : null}
-
-      <ComingSoonDialog open={comingSoonOpen} onClose={() => setComingSoonOpen(false)} />
     </>
   );
 }
