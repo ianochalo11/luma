@@ -28,7 +28,7 @@ test.describe("ticket flow happy path", () => {
     ).toBeVisible();
   });
 
-  test("complete form shows Coming Soon instead of wallet pay", async ({ page }) => {
+  test("complete form submits without Coming Soon dialog", async ({ page }) => {
     await page.goto("/event/breakpoint2026/register");
 
     await page.getByPlaceholder("Your Name").fill("Ada Lovelace");
@@ -48,6 +48,6 @@ test.describe("ticket flow happy path", () => {
     await page.getByRole("checkbox").nth(2).check();
 
     await page.getByRole("button", { name: /Pay with Wallet/i }).click();
-    await expect(page.getByRole("heading", { name: "Coming Soon" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Coming Soon" })).toHaveCount(0);
   });
 });
